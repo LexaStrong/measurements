@@ -1,5 +1,5 @@
 {
-  "name": "lemaire-clothing",
+  "name": "lemaire-atelier",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -10,9 +10,5 @@
   },
   "devDependencies": {
     "vite": "^5.0.0"
-  },
-  "dependencies": {
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6"
   }
 }
