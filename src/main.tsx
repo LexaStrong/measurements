@@ -2,6 +2,7 @@ import './index.css'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { ClerkProvider } from '@clerk/clerk-react'
+import { Analytics } from '@vercel/analytics/react'
 import App from './App'
 
 console.log("Main.tsx: App starting...");
@@ -96,6 +97,7 @@ if (isPlaceholder(PUBLISHABLE_KEY)) {
         <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
           <App />
         </ClerkProvider>
+        <Analytics />
       </ErrorBoundary>
     </React.StrictMode>,
   )
