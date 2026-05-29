@@ -1,0 +1,5 @@
+﻿
+> lemaire-atelier-react@2.0.0 build
+> tsc && vite build
+
+src/main.tsx(5,17): error TS5097: An import path can only end with a '.tsx' extension when 'allowImportingTsExtensions' is enabled.

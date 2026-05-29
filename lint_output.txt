@@ -1,0 +1,37 @@
+
+> lemaire-atelier-react@2.0.0 lint
+> eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
+
+
+C:\Users\demiurge\Desktop\measurements\src\App.tsx
+   1:36  error  'useEffect' is defined but never used        @typescript-eslint/no-unused-vars
+  10:3   error  'Settings' is defined but never used         @typescript-eslint/no-unused-vars
+  17:18  error  'AnimatePresence' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\demiurge\Desktop\measurements\src\components\DetailView.tsx
+   7:3  error  'Calendar' is defined but never used     @typescript-eslint/no-unused-vars
+   9:3  error  'MapPin' is defined but never used       @typescript-eslint/no-unused-vars
+  11:3  error  'AlertCircle' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\demiurge\Desktop\measurements\src\components\RecordForm.tsx
+    1:27  error  'useEffect' is defined but never used     @typescript-eslint/no-unused-vars
+  129:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  155:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\demiurge\Desktop\measurements\src\hooks\useSync.ts
+    4:22  error  'SyncQueueItem' is defined but never used  @typescript-eslint/no-unused-vars
+  112:33  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  114:27  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\demiurge\Desktop\measurements\src\main.tsx
+   9:101  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:22   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:42   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\demiurge\Desktop\measurements\src\utils\db.ts
+   63:29  error  'newVersion' is defined but never used    @typescript-eslint/no-unused-vars
+   63:41  error  'transaction' is defined but never used   @typescript-eslint/no-unused-vars
+  138:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 18 problems (18 errors, 0 warnings)
+
