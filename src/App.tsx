@@ -22,6 +22,7 @@ import {
   SignInButton,
   useUser 
 } from '@clerk/clerk-react';
+import { Analytics } from '@vercel/analytics/react';
 import { useRecords } from './hooks/useRecords';
 import { Button } from './components/ui/Button';
 import { Record } from './utils/db';
@@ -428,6 +429,7 @@ const App: React.FC = () => {
           </Sheet>
         </div>
       </SignedIn>
+      <Analytics />
     </div>
   );
 };

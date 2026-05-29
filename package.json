@@ -12,6 +12,7 @@
   "dependencies": {
     "@clerk/clerk-react": "^5.61.8",
     "@supabase/supabase-js": "^2.106.2",
+    "@vercel/analytics": "^2.0.1",
     "clsx": "^2.1.0",
     "framer-motion": "^11.0.8",
     "idb": "^8.0.0",
