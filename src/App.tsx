@@ -113,18 +113,32 @@ const App: React.FC = () => {
   if (!isUserLoaded) {
     return (
       <div className="min-h-screen bg-[#1E1A18] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-[#C9A96E]/20 border-t-[#C9A96E] rounded-full animate-spin" />
+        <motion.img 
+          src="/logo.png" 
+          alt="Loading Lemaire Atelier..." 
+          className="w-32 h-32 object-contain drop-shadow-[0_0_15px_rgba(201,169,110,0.3)]"
+          animate={{ 
+            scale: [0.95, 1.05, 0.95], 
+            opacity: [0.6, 1, 0.6] 
+          }}
+          transition={{ 
+            repeat: Infinity, 
+            duration: 2.5, 
+            ease: "easeInOut" 
+          }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen selection:bg-[#C9A96E] selection:text-[#1E1A18] bg-[#1E1A18] text-[#E8E2D9]">
+    <div className="min-h-screen selection:bg-[#C9A96E] selection:text-[#1E1A18] bg-[#1E1A18] text-[#E8E2D9] relative overflow-hidden">
+      {/* Global Background Decoration */}
+      <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#C9A96E] opacity-10 blur-[150px] rounded-full pointer-events-none" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#C45C2A] opacity-10 blur-[150px] rounded-full pointer-events-none" />
+      
       <SignedOut>
-        <div className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden">
-          {/* Background Decoration */}
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#C9A96E] opacity-5 blur-[120px] rounded-full" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#C45C2A] opacity-5 blur-[120px] rounded-full" />
+        <div className="min-h-screen flex flex-col items-center justify-center px-6 relative z-10">
           
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -176,7 +190,7 @@ const App: React.FC = () => {
       <SignedIn>
         <div className="pb-24">
           {/* Header */}
-          <header className="px-6 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-[#1E1A18]/80 backdrop-blur-lg z-30">
+          <header className="px-6 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-[#1E1A18]/40 backdrop-blur-2xl border-b border-white/5 z-30 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-[#E8E2D9]">Lemaire</h1>
               <p className="text-[#6B6560] text-sm font-medium">Welcome back, {user?.firstName || 'Atelier'}</p>
@@ -212,7 +226,7 @@ const App: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="bg-[#2A2624] p-5 rounded-2xl border border-[#3D3834] relative overflow-hidden group hover:border-[#C9A96E]/20 transition-all"
+                className="bg-white/5 backdrop-blur-xl p-5 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-[#C9A96E]/30 transition-all shadow-lg"
               >
                 <div className={`mb-3 p-2 rounded-xl bg-[#1E1A18] w-fit ${stat.color} group-hover:scale-110 transition-transform`}>
                   <stat.icon size={18} />
@@ -224,7 +238,7 @@ const App: React.FC = () => {
           </section>
 
           {/* Search & Actions */}
-          <section className="px-6 py-4 flex gap-3 sticky top-[88px] bg-[#1E1A18] z-20">
+          <section className="px-6 py-4 flex gap-3 sticky top-[88px] bg-[#1E1A18]/30 backdrop-blur-2xl border-b border-white/5 z-20">
             <div className="relative flex-1 group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B6560] group-focus-within:text-[#C9A96E] transition-colors" size={18} />
               <input
@@ -232,7 +246,7 @@ const App: React.FC = () => {
                 placeholder="Search clients or garments..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#2A2624] border border-[#3D3834] text-[#E8E2D9] rounded-2xl pl-12 pr-4 py-4 focus:border-[#C9A96E] outline-none transition-all"
+                className="w-full bg-white/5 backdrop-blur-md border border-white/10 text-[#E8E2D9] rounded-2xl pl-12 pr-4 py-4 focus:border-[#C9A96E]/50 focus:bg-white/10 outline-none transition-all shadow-inner"
               />
               {searchQuery && (
                 <button 
@@ -251,12 +265,31 @@ const App: React.FC = () => {
           {/* Record List */}
           <section className="px-6 py-4 space-y-4">
             {recordsLoading ? (
-              <div className="py-20 flex flex-col items-center justify-center text-[#6B6560]">
-                <div className="w-10 h-10 border-4 border-[#C9A96E]/20 border-t-[#C9A96E] rounded-full animate-spin mb-4" />
-                <p className="text-xs font-bold uppercase tracking-widest">Syncing Cloud...</p>
+              <div className="py-24 flex flex-col items-center justify-center text-[#6B6560]">
+                <motion.img 
+                  src="/logo.png" 
+                  alt="Syncing..." 
+                  className="w-16 h-16 object-contain mb-6 drop-shadow-[0_0_10px_rgba(201,169,110,0.2)]"
+                  animate={{ 
+                    scale: [0.95, 1.1, 0.95], 
+                    opacity: [0.5, 1, 0.5] 
+                  }}
+                  transition={{ 
+                    repeat: Infinity, 
+                    duration: 1.5, 
+                    ease: "easeInOut" 
+                  }}
+                />
+                <motion.p 
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                  className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C9A96E]"
+                >
+                  Syncing Cloud...
+                </motion.p>
               </div>
             ) : activeTab === 'timeline' ? (
-              <div className="relative border-l border-[#3D3834] ml-3 pl-5 space-y-6">
+              <div className="relative border-l border-white/10 ml-3 pl-5 space-y-6">
                 {records.length > 0 ? records.map((record, i) => (
                   <motion.div 
                     key={`${record.id}-tl`}
@@ -267,7 +300,7 @@ const App: React.FC = () => {
                     onClick={() => handleOpenDetail(record)}
                   >
                     <span className="absolute -left-[25px] top-2 w-3 h-3 bg-[#C9A96E] rounded-full border-2 border-[#1E1A18]" />
-                    <div className="bg-[#2A2624] p-4 rounded-xl border border-[#3D3834] group hover:border-[#C9A96E]/30 cursor-pointer transition-all">
+                    <div className="bg-white/5 backdrop-blur-lg p-4 rounded-2xl border border-white/10 group hover:border-[#C9A96E]/30 cursor-pointer transition-all shadow-lg">
                       <div className="text-[10px] text-[#C9A96E] font-bold uppercase tracking-widest mb-1">
                         {record.date ? new Date(record.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'No Date Scheduled'}
                       </div>
@@ -289,7 +322,7 @@ const App: React.FC = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
                     onClick={() => handleOpenDetail(record)}
-                    className="bg-[#2A2624] p-5 rounded-2xl border border-[#3D3834] group hover:border-[#C9A96E]/30 transition-all cursor-pointer flex items-center justify-between"
+                    className="bg-white/5 backdrop-blur-lg p-5 rounded-3xl border border-white/10 group hover:border-[#C9A96E]/30 transition-all cursor-pointer flex items-center justify-between shadow-lg"
                   >
                     <div>
                       <h3 className="text-xl font-medium text-[#E8E2D9] group-hover:text-[#C9A96E] transition-colors">{record.name}</h3>
@@ -344,7 +377,7 @@ const App: React.FC = () => {
           </button>
 
           {/* Navigation */}
-          <nav className="fixed bottom-0 left-0 right-0 p-4 bg-[#1E1A18]/80 backdrop-blur-xl border-t border-[#3D3834] flex justify-around items-center z-30 lg:max-w-md lg:mx-auto lg:rounded-t-3xl">
+          <nav className="fixed bottom-0 left-0 right-0 p-4 bg-white/5 backdrop-blur-3xl border-t border-white/10 flex justify-around items-center z-30 lg:max-w-md lg:mx-auto lg:rounded-t-3xl shadow-[0_-8px_32px_rgba(0,0,0,0.3)]">
             <button 
               onClick={() => setActiveTab('records')}
               className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'records' ? 'text-[#C9A96E]' : 'text-[#6B6560]'}`}

@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { useSupabase } from '../utils/supabase';
-import { DB, Record, SyncQueueItem } from '../utils/db';
+import { Record, SyncQueueItem, createDBClient } from '../utils/db';
 
-export const useSync = (records: Record[], refresh: () => Promise<void>) => {
+export const useSync = (records: Record[], refresh: () => Promise<void>, db: ReturnType<typeof createDBClient> | null) => {
   const { user, isLoaded } = useUser();
   const supabase = useSupabase();
   const [syncing, setSyncing] = useState(false);
@@ -24,11 +24,11 @@ export const useSync = (records: Record[], refresh: () => Promise<void>) => {
   }, []);
 
   const processSyncQueue = useCallback(async () => {
-    if (!isLoaded || !user || !supabase || !isOnline) return;
+    if (!isLoaded || !user || !supabase || !isOnline || !db) return;
     
     setSyncing(true);
     try {
-      const queue = await DB.getSyncQueue();
+      const queue = await db.getSyncQueue();
       if (queue.length === 0) return;
 
       const client = supabase;
@@ -38,12 +38,12 @@ export const useSync = (records: Record[], refresh: () => Promise<void>) => {
           const cloudRecord = { ...(item.payload as Record), user_id: user.id };
           const { error } = await client.from('records').upsert(cloudRecord);
           if (!error && item.id) {
-            await DB.removeFromSyncQueue(item.id);
+            await db.removeFromSyncQueue(item.id);
           }
         } else if (item.action === 'DELETE') {
           const { error } = await client.from('records').delete().eq('id', item.payload as string);
           if (!error && item.id) {
-            await DB.removeFromSyncQueue(item.id);
+            await db.removeFromSyncQueue(item.id);
           }
         }
       }
@@ -52,7 +52,7 @@ export const useSync = (records: Record[], refresh: () => Promise<void>) => {
     } finally {
       setSyncing(false);
     }
-  }, [isLoaded, user, isOnline]);
+  }, [isLoaded, user, supabase, isOnline, db]);
 
   // Process queue when coming back online
   useEffect(() => {
@@ -63,7 +63,7 @@ export const useSync = (records: Record[], refresh: () => Promise<void>) => {
 
   // Initial Sync from Cloud to Local
   useEffect(() => {
-    if (isLoaded && user && supabase) {
+    if (isLoaded && user && supabase && db) {
       const client = supabase; // Local ref for narrowing
       const initialSync = async () => {
         setSyncing(true);
@@ -81,14 +81,14 @@ export const useSync = (records: Record[], refresh: () => Promise<void>) => {
           if (error) throw error;
           if (data) {
             // Reconcile with local DB (Cloud wins for latest updatedAt)
-            const localRecords = await DB.getAll();
+            const localRecords = await db.getAll();
             const toUpdateLocally = data.filter(cloud => {
               const local = localRecords.find(l => l.id === cloud.id);
               return !local || new Date(cloud.updatedAt) > new Date(local.updatedAt);
             });
             
             if (toUpdateLocally.length > 0) {
-              await DB.saveAll(toUpdateLocally);
+              await db.saveAll(toUpdateLocally);
               await refresh();
             }
           }
@@ -101,11 +101,11 @@ export const useSync = (records: Record[], refresh: () => Promise<void>) => {
       
       initialSync();
     }
-  }, [isLoaded, user, refresh, isOnline, processSyncQueue]);
+  }, [isLoaded, user, refresh, isOnline, processSyncQueue, db, supabase]);
 
   // Real-time Subscriptions
   useEffect(() => {
-    if (isLoaded && user && supabase) {
+    if (isLoaded && user && supabase && db) {
       const client = supabase;
       const channel = client
         .channel('records_sync')
@@ -115,11 +115,11 @@ export const useSync = (records: Record[], refresh: () => Promise<void>) => {
           async (payload: any) => {
             if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
               const record = payload.new as Record;
-              await DB.save(record);
+              await db.save(record);
               await refresh();
             } else if (payload.eventType === 'DELETE') {
               const id = payload.old.id;
-              await DB.delete(id);
+              await db.delete(id);
               await refresh();
             }
           }
@@ -130,14 +130,14 @@ export const useSync = (records: Record[], refresh: () => Promise<void>) => {
         client.removeChannel(channel);
       };
     }
-  }, [isLoaded, user, refresh]);
+  }, [isLoaded, user, refresh, db, supabase]);
 
   // Sync Local Changes to Cloud
   const syncToCloud = async (record: Record) => {
-    if (!isLoaded || !user) return;
+    if (!isLoaded || !user || !db) return;
     
     if (!isOnline || !supabase) {
-      await DB.enqueueSync('UPSERT', record);
+      await db.enqueueSync('UPSERT', record);
       return;
     }
 
@@ -150,15 +150,15 @@ export const useSync = (records: Record[], refresh: () => Promise<void>) => {
       if (error) throw error;
     } catch (err) {
       console.error('Sync to cloud error. Queuing for later:', err);
-      await DB.enqueueSync('UPSERT', record);
+      await db.enqueueSync('UPSERT', record);
     }
   };
 
   const deleteFromCloud = async (id: string) => {
-    if (!isLoaded || !user) return;
+    if (!isLoaded || !user || !db) return;
 
     if (!isOnline || !supabase) {
-      await DB.enqueueSync('DELETE', id);
+      await db.enqueueSync('DELETE', id);
       return;
     }
 
@@ -171,7 +171,7 @@ export const useSync = (records: Record[], refresh: () => Promise<void>) => {
       if (error) throw error;
     } catch (err) {
       console.error('Delete from cloud error. Queuing for later:', err);
-      await DB.enqueueSync('DELETE', id);
+      await db.enqueueSync('DELETE', id);
     }
   };
 

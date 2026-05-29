@@ -54,12 +54,13 @@ const STORE_NAME = 'records';
 const QUEUE_STORE = 'sync_queue';
 const VERSION = 3;
 
-let dbPromise: Promise<IDBPDatabase<LemaireDB>> | null = null;
+const dbPromises = new Map<string, Promise<IDBPDatabase<LemaireDB>>>();
 
-export const getDB = () => {
-  if (dbPromise) return dbPromise;
+export const getDB = (userId: string) => {
+  if (dbPromises.has(userId)) return dbPromises.get(userId)!;
   
-  dbPromise = openDB<LemaireDB>(DB_NAME, VERSION, {
+  const dbName = `LemaireAtelier_${userId}`;
+  const promise = openDB<LemaireDB>(dbName, VERSION, {
     upgrade(db, oldVersion, newVersion, transaction) {
       if (oldVersion < 1) {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
@@ -79,23 +80,24 @@ export const getDB = () => {
     },
   });
   
-  return dbPromise;
+  dbPromises.set(userId, promise);
+  return promise;
 };
 
-export const DB = {
+export const createDBClient = (userId: string) => ({
   async getAll(): Promise<Record[]> {
-    const db = await getDB();
+    const db = await getDB(userId);
     const records = await db.getAll(STORE_NAME);
     return records.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   },
 
   async save(record: Record): Promise<void> {
-    const db = await getDB();
+    const db = await getDB(userId);
     await db.put(STORE_NAME, record);
   },
 
   async saveAll(records: Record[]): Promise<void> {
-    const db = await getDB();
+    const db = await getDB(userId);
     const tx = db.transaction(STORE_NAME, 'readwrite');
     for (const record of records) {
       tx.store.put(record);
@@ -104,14 +106,14 @@ export const DB = {
   },
 
   async delete(id: string): Promise<void> {
-    const db = await getDB();
+    const db = await getDB(userId);
     await db.delete(STORE_NAME, id);
   },
 
   // --- Sync Queue Operations ---
   
   async enqueueSync(action: 'UPSERT' | 'DELETE', payload: Record | string): Promise<void> {
-    const db = await getDB();
+    const db = await getDB(userId);
     await db.add(QUEUE_STORE, {
       action,
       payload,
@@ -120,18 +122,18 @@ export const DB = {
   },
 
   async getSyncQueue(): Promise<SyncQueueItem[]> {
-    const db = await getDB();
+    const db = await getDB(userId);
     const items = await db.getAll(QUEUE_STORE);
     return items.sort((a, b) => a.timestamp - b.timestamp);
   },
 
   async removeFromSyncQueue(id: number): Promise<void> {
-    const db = await getDB();
+    const db = await getDB(userId);
     await db.delete(QUEUE_STORE, id);
   },
 
   async clearSyncQueue(): Promise<void> {
-    const db = await getDB();
+    const db = await getDB(userId);
     await db.clear(QUEUE_STORE);
   },
   
@@ -166,4 +168,4 @@ export const DB = {
       createdAt:  r.createdAt  || r.updatedAt || new Date().toISOString(),
     }));
   }
-};
+});

@@ -34,11 +34,11 @@ export const Sheet: React.FC<SheetProps> = ({ isOpen, onClose, title, children }
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 max-h-[92vh] bg-[#1E1A18] border-t border-[#3D3834] rounded-t-[32px] z-50 overflow-hidden flex flex-col lg:max-w-2xl lg:mx-auto"
+            className="fixed bottom-0 left-0 right-0 max-h-[92vh] bg-[#1E1A18]/70 backdrop-blur-3xl border-t border-white/10 rounded-t-[32px] z-50 overflow-hidden flex flex-col lg:max-w-2xl lg:mx-auto shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
           >
             {/* Handle Bar */}
             <div className="w-full flex justify-center py-3">
-              <div className="w-12 h-1.5 bg-[#3D3834] rounded-full" />
+              <div className="w-12 h-1.5 bg-white/20 rounded-full" />
             </div>
 
             {/* Header */}

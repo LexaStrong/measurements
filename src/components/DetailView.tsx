@@ -87,18 +87,18 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
 
       {/* Diagrams */}
       <section className="grid grid-cols-2 gap-4">
-        <div className="bg-[#2A2624] p-5 rounded-[24px] border border-[#3D3834] flex flex-col items-center">
+        <div className="bg-white/5 backdrop-blur-md p-5 rounded-[24px] border border-white/10 flex flex-col items-center shadow-lg hover:border-[#C9A96E]/20 transition-all">
           <span className="text-[10px] uppercase tracking-widest text-[#6B6560] font-bold mb-4">Top</span>
           <TopSVG record={record} />
         </div>
-        <div className="bg-[#2A2624] p-5 rounded-[24px] border border-[#3D3834] flex flex-col items-center">
+        <div className="bg-white/5 backdrop-blur-md p-5 rounded-[24px] border border-white/10 flex flex-col items-center shadow-lg hover:border-[#C9A96E]/20 transition-all">
           <span className="text-[10px] uppercase tracking-widest text-[#6B6560] font-bold mb-4">Bottom</span>
           <DownSVG record={record} />
         </div>
       </section>
 
       {/* Measurement Details */}
-      <section className="bg-[#2A2624] rounded-[24px] border border-[#3D3834] divide-y divide-[#3D3834]">
+      <section className="bg-white/5 backdrop-blur-md rounded-[24px] border border-white/10 divide-y divide-white/10 shadow-lg">
         <div className="p-6">
           <h3 className="text-sm font-bold text-[#C9A96E] uppercase tracking-widest mb-4 flex items-center gap-2">
             <span>👕</span> Top Measurements
@@ -144,18 +144,18 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
       </section>
 
       {/* Financials */}
-      <section className="bg-[#2A2624] p-6 rounded-[24px] border border-[#3D3834]">
+      <section className="bg-white/5 backdrop-blur-md p-6 rounded-[24px] border border-white/10 shadow-lg">
         <div className="flex justify-between items-center mb-6">
           <div className="text-center">
             <div className="text-[10px] text-[#6B6560] uppercase tracking-widest font-bold mb-1">Charged</div>
             <div className="text-lg font-bold text-[#E8E2D9]">₵{parseFloat(record.charged || '0').toFixed(2)}</div>
           </div>
-          <div className="w-px h-8 bg-[#3D3834]" />
+          <div className="w-px h-8 bg-white/10" />
           <div className="text-center">
             <div className="text-[10px] text-[#6B6560] uppercase tracking-widest font-bold mb-1">Paid</div>
             <div className="text-lg font-bold text-[#4A7C59]">₵{parseFloat(record.paid || '0').toFixed(2)}</div>
           </div>
-          <div className="w-px h-8 bg-[#3D3834]" />
+          <div className="w-px h-8 bg-white/10" />
           <div className="text-center">
             <div className="text-[10px] text-[#6B6560] uppercase tracking-widest font-bold mb-1">Balance</div>
             <div className={`text-lg font-bold ${balance > 0 ? 'text-[#C45C2A]' : 'text-[#4A7C59]'}`}>
@@ -167,14 +167,14 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
 
       {/* Notes */}
       {record.notes && (
-        <section className="bg-[#2A2624] p-6 rounded-[24px] border border-[#3D3834]">
+        <section className="bg-white/5 backdrop-blur-md p-6 rounded-[24px] border border-white/10 shadow-lg">
           <h3 className="text-xs font-bold text-[#6B6560] uppercase tracking-widest mb-3">Notes</h3>
           <p className="text-sm text-[#E8E2D9] leading-relaxed whitespace-pre-wrap">{record.notes}</p>
         </section>
       )}
 
       {/* Footer Actions */}
-      <section className="flex gap-4 pt-6 border-t border-[#3D3834]">
+      <section className="flex gap-4 pt-6 border-t border-white/10">
         <Button variant="outline" className="flex-1" onClick={onEdit}>
           <Edit3 size={18} /> Edit
         </Button>
