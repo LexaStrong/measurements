@@ -11,8 +11,10 @@ import {
   AlertCircle,
   Share2,
   Trash2,
-  Edit3
+  Edit3,
+  Loader2
 } from 'lucide-react';
+import { shareRecord } from '../utils/share';
 
 interface DetailViewProps {
   record: Record;
@@ -22,6 +24,7 @@ interface DetailViewProps {
 }
 
 export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete, onToggleReceived }) => {
+  const [sharing, setSharing] = React.useState(false);
   const balance = (parseFloat(record.charged) || 0) - (parseFloat(record.paid) || 0);
   
   const getCollectionStatus = () => {
@@ -56,8 +59,18 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
           <Button variant="outline" size="sm" onClick={() => window.location.href = `tel:${record.phone}`}>
             <Phone size={16} /> Call
           </Button>
-          <Button variant="outline" size="sm">
-            <Share2 size={16} /> Share
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={async () => {
+              setSharing(true);
+              await shareRecord(record);
+              setSharing(false);
+            }}
+            disabled={sharing}
+          >
+            {sharing ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />} 
+            {sharing ? 'Generating...' : 'Share'}
           </Button>
         </div>
       </section>

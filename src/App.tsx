@@ -12,7 +12,10 @@ import {
   X,
   ShieldCheck,
   Zap,
-  Globe
+  Globe,
+  Download,
+  Upload,
+  User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -28,6 +31,7 @@ import { Record } from './utils/db';
 import { Sheet } from './components/Sheet';
 import { RecordForm } from './components/RecordForm';
 import { DetailView } from './components/DetailView';
+import { createDBClient } from './utils/db';
 
 const App: React.FC = () => {
   const { user, isLoaded: isUserLoaded } = useUser();
@@ -108,6 +112,51 @@ const App: React.FC = () => {
     };
     await updateRecord(updated);
     setSelectedRecord(updated);
+  };
+
+  const handleExport = async () => {
+    if (records.length === 0) {
+      alert('No records to export');
+      return;
+    }
+    const dataStr = JSON.stringify(records, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Lemaire_Measurements_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const importedRecords = JSON.parse(event.target?.result as string);
+        if (!Array.isArray(importedRecords)) throw new Error('Invalid file format');
+
+        const db = createDBClient(user.id);
+        const legacyMigrated = db.migrateLegacy(importedRecords);
+        
+        if (confirm(`Import ${legacyMigrated.length} records? This will merge with your current data.`)) {
+          await db.saveAll(legacyMigrated);
+          // Sync all to cloud in background
+          for (const record of legacyMigrated) {
+            addRecord(record); // This will save and sync
+          }
+          alert('Import successful!');
+          window.location.reload();
+        }
+      } catch (err) {
+        console.error('Import failed:', err);
+        alert('Failed to import records. Please ensure the file is a valid JSON export.');
+      }
+    };
+    reader.readAsText(file);
   };
 
   if (!isUserLoaded) {
@@ -202,6 +251,25 @@ const App: React.FC = () => {
                   <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-[#C45C2A] rounded-full border-2 border-[#1E1A18]" />
                 )}
               </Button>
+              
+              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/10">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleExport}
+                  title="Export All Records"
+                  className="w-9 h-9 text-[#6B6560] hover:text-[#C9A96E]"
+                >
+                  <Download size={18} />
+                </Button>
+                <label className="cursor-pointer">
+                  <input type="file" className="hidden" accept=".json" onChange={handleImport} />
+                  <div className="w-9 h-9 flex items-center justify-center text-[#6B6560] hover:text-[#C9A96E] transition-colors">
+                    <Upload size={18} />
+                  </div>
+                </label>
+              </div>
+
               <UserButton 
                 afterSignOutUrl="/"
                 appearance={{
