@@ -14,12 +14,18 @@ export interface Record {
   topLength: string;
   arm: string;
   shoulder: string;
+  neck: string;
+  wrist: string;
+  agbada: string;
+  cap: string;
   waist: string;
   downLength: string;
   hip: string;
   bass: string;
   thigh: string;
   knee: string;
+  inseam: string;
+  outseam: string;
   charged: string;
   paid: string;
   collection: string;
@@ -152,12 +158,18 @@ export const createDBClient = (userId: string) => ({
       topLength:  r.topLength  || r.topLen || '',
       arm:        r.arm        || '',
       shoulder:   r.shoulder   || '',
+      neck:       r.neck       || '',
+      wrist:      r.wrist      || '',
+      agbada:     r.agbada     || '',
+      cap:        r.cap        || '',
       waist:      r.waist      || '',
       downLength: r.downLength || r.downLen || '',
       hip:        r.hip        || '',
       bass:       r.bass       || '',
       thigh:      r.thigh      || '',
       knee:       r.knee       || '',
+      inseam:     r.inseam     || '',
+      outseam:    r.outseam    || '',
       charged:    r.charged    || '',
       paid:       r.paid       || '',
       collection: r.collection || '',

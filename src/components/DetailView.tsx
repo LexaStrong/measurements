@@ -126,6 +126,10 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
               { label: 'Length', value: record.topLength },
               { label: 'Arm', value: record.arm },
               { label: 'Shoulder', value: record.shoulder },
+              { label: 'Neck', value: record.neck },
+              { label: 'Wrist', value: record.wrist },
+              { label: 'Agbada', value: record.agbada },
+              { label: 'Cap', value: record.cap },
             ].filter(f => f.value).map(f => (
               <div key={f.label} className="flex justify-between items-center pr-8">
                 <span className="text-xs text-[#6B6560]">{f.label}</span>
@@ -146,6 +150,8 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
               { label: 'Bass', value: record.bass },
               { label: 'Thigh', value: record.thigh },
               { label: 'Knee', value: record.knee },
+              { label: 'Inseam', value: record.inseam },
+              { label: 'Outseam', value: record.outseam },
             ].filter(f => f.value).map(f => (
               <div key={f.label} className="flex justify-between items-center pr-8">
                 <span className="text-xs text-[#6B6560]">{f.label}</span>

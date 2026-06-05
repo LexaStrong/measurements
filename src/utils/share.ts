@@ -107,6 +107,10 @@ export const generateReceipt = async (record: Record): Promise<Blob> => {
     { label: 'Top Length', value: record.topLength },
     { label: 'Arm', value: record.arm },
     { label: 'Shoulder', value: record.shoulder },
+    { label: 'Neck', value: record.neck },
+    { label: 'Wrist', value: record.wrist },
+    { label: 'Agbada', value: record.agbada },
+    { label: 'Cap', value: record.cap },
   ];
 
   const downMeasurements = [
@@ -116,6 +120,8 @@ export const generateReceipt = async (record: Record): Promise<Blob> => {
     { label: 'Bass', value: record.bass },
     { label: 'Thigh', value: record.thigh },
     { label: 'Knee', value: record.knee },
+    { label: 'Inseam', value: record.inseam },
+    { label: 'Outseam', value: record.outseam },
   ];
 
   ctx.fillStyle = colors.gold;

@@ -22,12 +22,18 @@ export const RecordForm: React.FC<RecordFormProps> = ({ initialData, onSubmit, o
     topLength: '',
     arm: '',
     shoulder: '',
+    neck: '',
+    wrist: '',
+    agbada: '',
+    cap: '',
     waist: '',
     downLength: '',
     hip: '',
     bass: '',
     thigh: '',
     knee: '',
+    inseam: '',
+    outseam: '',
     charged: '',
     paid: '',
     collection: '',
@@ -121,6 +127,10 @@ export const RecordForm: React.FC<RecordFormProps> = ({ initialData, onSubmit, o
               { name: 'shoulder', label: 'Shoulder' },
               { name: 'halfBack', label: 'Half Back' },
               { name: 'fullBack', label: 'Full Back' },
+              { name: 'neck', label: 'Neck' },
+              { name: 'wrist', label: 'Wrist' },
+              { name: 'agbada', label: 'Agbada' },
+              { name: 'cap', label: 'Cap' },
             ].map(f => (
               <div key={f.name} className="space-y-1.5">
                 <span className="text-[9px] text-[#6B6560] uppercase tracking-tighter">{f.label}</span>
@@ -147,6 +157,8 @@ export const RecordForm: React.FC<RecordFormProps> = ({ initialData, onSubmit, o
               { name: 'bass', label: 'Bass' },
               { name: 'thigh', label: 'Thigh' },
               { name: 'knee', label: 'Knee' },
+              { name: 'inseam', label: 'Inseam' },
+              { name: 'outseam', label: 'Outseam' },
             ].map(f => (
               <div key={f.name} className="space-y-1.5">
                 <span className="text-[9px] text-[#6B6560] uppercase tracking-tighter">{f.label}</span>
