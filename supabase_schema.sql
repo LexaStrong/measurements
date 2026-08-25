@@ -1,5 +1,9 @@
--- Create the records table
-create table public.records (
+-- ==========================================================
+-- LEMAIRE ATELIER SUPABASE SCHEMA & STORAGE CONFIGURATION
+-- ==========================================================
+
+-- 1. Create the records table (if not exists)
+create table if not exists public.records (
   -- Primary Key
   id text primary key,
   
@@ -11,6 +15,7 @@ create table public.records (
   phone text default '',
   date text default '',
   garment text default '',
+  "imageUrl" text default '',
   
   -- Measurements
   "halfBack" text default '',
@@ -21,12 +26,18 @@ create table public.records (
   "topLength" text default '',
   arm text default '',
   shoulder text default '',
+  neck text default '',
+  wrist text default '',
+  agbada text default '',
+  cap text default '',
   waist text default '',
   "downLength" text default '',
   hip text default '',
   bass text default '',
   thigh text default '',
   knee text default '',
+  inseam text default '',
+  outseam text default '',
   
   -- Financial & Tracking
   charged text default '',
@@ -41,29 +52,95 @@ create table public.records (
   "createdAt" text not null
 );
 
--- Enable Row Level Security (RLS)
+-- Migration safety: ensure imageUrl column exists on existing installations
+alter table public.records add column if not exists "imageUrl" text default '';
+
+-- 2. Enable Row Level Security (RLS) on records
 alter table public.records enable row level security;
 
--- Create policy to allow users to ONLY see their own records
+-- Policies for public.records
+drop policy if exists "Users can view their own records" on public.records;
 create policy "Users can view their own records"
   on public.records for select
   using ( auth.jwt()->>'sub' = user_id );
 
--- Create policy to allow users to ONLY insert their own records
+drop policy if exists "Users can insert their own records" on public.records;
 create policy "Users can insert their own records"
   on public.records for insert
   with check ( auth.jwt()->>'sub' = user_id );
 
--- Create policy to allow users to ONLY update their own records
+drop policy if exists "Users can update their own records" on public.records;
 create policy "Users can update their own records"
   on public.records for update
   using ( auth.jwt()->>'sub' = user_id )
   with check ( auth.jwt()->>'sub' = user_id );
 
--- Create policy to allow users to ONLY delete their own records
+drop policy if exists "Users can delete their own records" on public.records;
 create policy "Users can delete their own records"
   on public.records for delete
   using ( auth.jwt()->>'sub' = user_id );
 
--- IMPORTANT: Enable Realtime for the records table so the app can listen for changes
-alter publication supabase_realtime add table public.records;
+-- 3. Enable Realtime for the records table (idempotent check)
+do $$
+begin
+  if not exists (
+    select 1 
+    from pg_publication_tables 
+    where pubname = 'supabase_realtime' 
+      and schemaname = 'public' 
+      and tablename = 'records'
+  ) then
+    alter publication supabase_realtime add table public.records;
+  end if;
+end $$;
+
+-- ==========================================================
+-- 4. STORAGE BUCKET CONFIGURATION FOR REFERENCE DESIGNS
+-- ==========================================================
+
+-- Create the public storage bucket for garment reference designs
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'garment-designs',
+  'garment-designs',
+  true,
+  10485760, -- 10 MB limit
+  array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/gif']
+)
+on conflict (id) do update set 
+  public = true,
+  file_size_limit = 10485760,
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/gif'];
+
+-- Storage Policy: Users can view/read all designs from public bucket
+drop policy if exists "Garment design images are publicly viewable" on storage.objects;
+create policy "Garment design images are publicly viewable"
+  on storage.objects for select
+  using ( bucket_id = 'garment-designs' );
+
+-- Storage Policy: Users can upload to their own user folder (folder name matches user_id)
+drop policy if exists "Users can upload their own garment designs" on storage.objects;
+create policy "Users can upload their own garment designs"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'garment-designs' 
+    and (auth.jwt()->>'sub') = (storage.foldername(name))[1]
+  );
+
+-- Storage Policy: Users can update their own garment designs
+drop policy if exists "Users can update their own garment designs" on storage.objects;
+create policy "Users can update their own garment designs"
+  on storage.objects for update
+  using (
+    bucket_id = 'garment-designs' 
+    and (auth.jwt()->>'sub') = (storage.foldername(name))[1]
+  );
+
+-- Storage Policy: Users can delete their own garment designs
+drop policy if exists "Users can delete their own garment designs" on storage.objects;
+create policy "Users can delete their own garment designs"
+  on storage.objects for delete
+  using (
+    bucket_id = 'garment-designs' 
+    and (auth.jwt()->>'sub') = (storage.foldername(name))[1]
+  );

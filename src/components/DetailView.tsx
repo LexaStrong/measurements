@@ -1,20 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Record } from '../utils/db';
 import { TopSVG, DownSVG } from '../utils/svg';
 import { Button } from './ui/Button';
 import { 
   Phone, 
-  Calendar, 
   Clock, 
-  MapPin, 
   CheckCircle2, 
-  AlertCircle,
-  Share2,
-  Trash2,
-  Edit3,
-  Loader2
+  Share2, 
+  Trash2, 
+  Edit3, 
+  Loader2,
+  Receipt,
+  Scissors,
+  X,
+  ChevronRight,
+  Sparkles,
+  Maximize2
 } from 'lucide-react';
-import { shareRecord } from '../utils/share';
+import { shareRecord, ReceiptRecipient } from '../utils/share';
 
 interface DetailViewProps {
   record: Record;
@@ -24,7 +28,9 @@ interface DetailViewProps {
 }
 
 export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete, onToggleReceived }) => {
-  const [sharing, setSharing] = React.useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [sharingType, setSharingType] = useState<ReceiptRecipient | null>(null);
   const balance = (parseFloat(record.charged) || 0) - (parseFloat(record.paid) || 0);
   
   const getCollectionStatus = () => {
@@ -46,6 +52,16 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
     return { label: `Due in ${diffDays}d`, color: 'text-[#6B6560]', bg: 'bg-[#2A2624]' };
   };
 
+  const handleShare = async (recipient: ReceiptRecipient) => {
+    try {
+      setSharingType(recipient);
+      await shareRecord(record, recipient);
+    } finally {
+      setSharingType(null);
+      setIsShareModalOpen(false);
+    }
+  };
+
   const status = getCollectionStatus();
 
   return (
@@ -62,18 +78,158 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={async () => {
-              setSharing(true);
-              await shareRecord(record);
-              setSharing(false);
-            }}
-            disabled={sharing}
+            onClick={() => setIsShareModalOpen(true)}
+            disabled={sharingType !== null}
           >
-            {sharing ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />} 
-            {sharing ? 'Generating...' : 'Share'}
+            {sharingType ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />} 
+            {sharingType ? 'Generating...' : 'Share'}
           </Button>
         </div>
       </section>
+
+      {/* Share Recipient Selection Modal */}
+      <AnimatePresence>
+        {isShareModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !sharingType && setIsShareModalOpen(false)}
+              className="absolute inset-0 bg-black/75 backdrop-blur-md"
+            />
+            
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+              className="relative w-full max-w-md bg-[#1E1A18] border border-[#C9A96E]/20 rounded-3xl p-6 shadow-2xl z-10 overflow-hidden"
+            >
+              {/* Top Accent Light */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-1 bg-gradient-to-r from-transparent via-[#C9A96E] to-transparent" />
+
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-xl font-bold text-[#E8E2D9]">Share Receipt</h3>
+                  <p className="text-xs text-[#8A827B] mt-0.5">Choose target recipient format</p>
+                </div>
+                <button
+                  onClick={() => setIsShareModalOpen(false)}
+                  disabled={sharingType !== null}
+                  className="p-1.5 rounded-full bg-white/5 text-[#8A827B] hover:text-[#E8E2D9] hover:bg-white/10 transition-colors disabled:opacity-50"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {/* Option 1: Customer Receipt */}
+                <button
+                  onClick={() => handleShare('customer')}
+                  disabled={sharingType !== null}
+                  className="w-full text-left p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-[#C9A96E]/40 transition-all flex items-center justify-between group disabled:opacity-50"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-[#C9A96E]/10 border border-[#C9A96E]/20 flex items-center justify-center text-[#C9A96E] group-hover:scale-105 transition-transform">
+                      {sharingType === 'customer' ? (
+                        <Loader2 size={22} className="animate-spin text-[#C9A96E]" />
+                      ) : (
+                        <Receipt size={22} />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-base font-bold text-[#E8E2D9] group-hover:text-[#C9A96E] transition-colors flex items-center gap-2">
+                        Customer Receipt
+                        <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-[#C9A96E]/15 text-[#C9A96E]">
+                          Client
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#8A827B] mt-0.5">
+                        Invoice, payment summary & order specs (measurements omitted)
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className="text-[#8A827B] group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
+                </button>
+
+                {/* Option 2: Apprentice / Designer */}
+                <button
+                  onClick={() => handleShare('apprentice')}
+                  disabled={sharingType !== null}
+                  className="w-full text-left p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-[#C9A96E]/40 transition-all flex items-center justify-between group disabled:opacity-50"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-[#C45C2A]/10 border border-[#C45C2A]/20 flex items-center justify-center text-[#C45C2A] group-hover:scale-105 transition-transform">
+                      {sharingType === 'apprentice' ? (
+                        <Loader2 size={22} className="animate-spin text-[#C45C2A]" />
+                      ) : (
+                        <Scissors size={22} />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-base font-bold text-[#E8E2D9] group-hover:text-[#C9A96E] transition-colors flex items-center gap-2">
+                        Apprentice / Tailor
+                        <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-[#C45C2A]/15 text-[#C45C2A]">
+                          Full Specs
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#8A827B] mt-0.5">
+                        Technical work order with full precision measurements & specs
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className="text-[#8A827B] group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
+                </button>
+              </div>
+
+              {sharingType && (
+                <div className="mt-4 text-center text-xs text-[#C9A96E] flex items-center justify-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  Generating {sharingType === 'customer' ? 'Customer' : 'Technical'} Receipt...
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Lightbox Modal for Reference Design */}
+      <AnimatePresence>
+        {isLightboxOpen && record.imageUrl && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsLightboxOpen(false)}
+              className="absolute inset-0 bg-black/90 backdrop-blur-lg"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-4xl max-h-[85vh] z-10 flex flex-col items-center"
+            >
+              <button
+                onClick={() => setIsLightboxOpen(false)}
+                className="absolute -top-12 right-0 p-2 rounded-full bg-white/10 text-[#E8E2D9] hover:bg-white/20 transition-colors"
+                title="Close Lightbox"
+              >
+                <X size={20} />
+              </button>
+              <img
+                src={record.imageUrl}
+                alt={`${record.name}'s Reference Design`}
+                className="max-h-[80vh] max-w-full rounded-2xl object-contain shadow-2xl border border-white/20"
+              />
+              <div className="mt-3 text-center text-xs text-[#8A827B]">
+                {record.name} • {record.garment || 'Reference Design'}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Status Banners */}
       <section className="space-y-3">
@@ -97,6 +253,41 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
           </div>
         )}
       </section>
+
+      {/* Reference Design Section (If attached) */}
+      {record.imageUrl && (
+        <section className="bg-white/5 backdrop-blur-md p-5 rounded-[24px] border border-white/10 shadow-lg group">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-bold text-[#C9A96E] uppercase tracking-widest flex items-center gap-1.5">
+              <Sparkles size={14} />
+              <span>Garment Reference Design</span>
+            </h3>
+            <button
+              onClick={() => setIsLightboxOpen(true)}
+              className="text-xs text-[#8A827B] hover:text-[#C9A96E] flex items-center gap-1 transition-colors"
+            >
+              <Maximize2 size={13} />
+              <span>Full View</span>
+            </button>
+          </div>
+
+          <div 
+            onClick={() => setIsLightboxOpen(true)}
+            className="relative h-64 w-full rounded-2xl overflow-hidden bg-black/40 border border-white/10 cursor-pointer group/img flex items-center justify-center"
+          >
+            <img 
+              src={record.imageUrl} 
+              alt="Reference Design" 
+              className="w-full h-full object-contain group-hover/img:scale-105 transition-transform duration-300"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity flex items-end justify-center pb-3">
+              <span className="text-xs font-semibold text-[#E8E2D9] px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center gap-1.5">
+                <Maximize2 size={12} /> Tap to zoom
+              </span>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Diagrams */}
       <section className="grid grid-cols-2 gap-4">

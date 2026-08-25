@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Users, 
   Plus, 
@@ -6,23 +6,22 @@ import {
   Filter, 
   Calendar, 
   Trophy, 
-  ArrowUpRight,
-  Settings,
-  Bell,
-  X,
-  ShieldCheck,
-  Zap,
-  Globe,
-  Download,
-  Upload,
-  User
+  ArrowUpRight, 
+  Bell, 
+  X, 
+  ShieldCheck, 
+  Zap, 
+  Globe, 
+  Download, 
+  Upload, 
+  BarChart3 
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   SignedIn, 
   SignedOut, 
   UserButton, 
-  SignInButton,
+  SignInButton, 
   useUser 
 } from '@clerk/clerk-react';
 import { useRecords } from './hooks/useRecords';
@@ -31,21 +30,20 @@ import { Record } from './utils/db';
 import { Sheet } from './components/Sheet';
 import { RecordForm } from './components/RecordForm';
 import { DetailView } from './components/DetailView';
+import { ReportsView } from './components/ReportsView';
 import { createDBClient } from './utils/db';
 
 const App: React.FC = () => {
   const { user, isLoaded: isUserLoaded } = useUser();
   const { records, loading: recordsLoading, addRecord, updateRecord, deleteRecord } = useRecords();
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'records' | 'timeline'>('records');
+  const [activeTab, setActiveTab] = useState<'records' | 'timeline' | 'reports'>('records');
   
   // Sheet State
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Record | null>(null);
-
-  console.log("App: Render", { isUserLoaded, user: !!user, recordsCount: records.length });
 
   const stats = useMemo(() => {
     try {
@@ -237,7 +235,7 @@ const App: React.FC = () => {
       </SignedOut>
 
       <SignedIn>
-        <div className="pb-24">
+        <div className="pb-28">
           {/* Header */}
           <header className="px-6 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-[#1E1A18]/40 backdrop-blur-2xl border-b border-white/5 z-30 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
             <div>
@@ -257,14 +255,14 @@ const App: React.FC = () => {
                   variant="ghost" 
                   size="icon" 
                   onClick={handleExport}
-                  title="Export All Records"
+                  title="Export All Records (JSON Backup)"
                   className="w-9 h-9 text-[#6B6560] hover:text-[#C9A96E]"
                 >
                   <Download size={18} />
                 </Button>
                 <label className="cursor-pointer">
                   <input type="file" className="hidden" accept=".json" onChange={handleImport} />
-                  <div className="w-9 h-9 flex items-center justify-center text-[#6B6560] hover:text-[#C9A96E] transition-colors">
+                  <div className="w-9 h-9 flex items-center justify-center text-[#6B6560] hover:text-[#C9A96E] transition-colors" title="Import JSON Backup">
                     <Upload size={18} />
                   </div>
                 </label>
@@ -281,56 +279,60 @@ const App: React.FC = () => {
             </div>
           </header>
 
-          {/* Stats Grid */}
-          <section className="px-6 py-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { label: 'Total Clients', value: stats.total, icon: Users, color: 'text-[#C9A96E]' },
-              { label: 'This Month', value: stats.monthly, icon: Calendar, color: 'text-[#4A7C59]' },
-              { label: 'Revenue', value: `₵${stats.revenue}`, icon: Trophy, color: 'text-[#C9A96E]' },
-              { label: 'Owed', value: stats.owed, icon: ArrowUpRight, color: 'text-[#C45C2A]' },
-            ].map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-white/5 backdrop-blur-xl p-5 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-[#C9A96E]/30 transition-all shadow-lg"
-              >
-                <div className={`mb-3 p-2 rounded-xl bg-[#1E1A18] w-fit ${stat.color} group-hover:scale-110 transition-transform`}>
-                  <stat.icon size={18} />
-                </div>
-                <div className="text-2xl font-bold text-[#E8E2D9] mb-1">{stat.value}</div>
-                <div className="text-xs text-[#6B6560] font-medium uppercase tracking-wider">{stat.label}</div>
-              </motion.div>
-            ))}
-          </section>
-
-          {/* Search & Actions */}
-          <section className="px-6 py-4 flex gap-3 sticky top-[88px] bg-[#1E1A18]/30 backdrop-blur-2xl border-b border-white/5 z-20">
-            <div className="relative flex-1 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B6560] group-focus-within:text-[#C9A96E] transition-colors" size={18} />
-              <input
-                type="text"
-                placeholder="Search clients or garments..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white/5 backdrop-blur-md border border-white/10 text-[#E8E2D9] rounded-2xl pl-12 pr-4 py-4 focus:border-[#C9A96E]/50 focus:bg-white/10 outline-none transition-all shadow-inner"
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B6560] hover:text-[#E8E2D9]"
+          {/* Quick Stats Grid (Clients and Timeline Tabs) */}
+          {activeTab !== 'reports' && (
+            <section className="px-6 py-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: 'Total Clients', value: stats.total, icon: Users, color: 'text-[#C9A96E]' },
+                { label: 'This Month', value: stats.monthly, icon: Calendar, color: 'text-[#4A7C59]' },
+                { label: 'Revenue', value: `₵${stats.revenue}`, icon: Trophy, color: 'text-[#C9A96E]' },
+                { label: 'Owed', value: stats.owed, icon: ArrowUpRight, color: 'text-[#C45C2A]' },
+              ].map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="bg-white/5 backdrop-blur-xl p-5 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-[#C9A96E]/30 transition-all shadow-lg"
                 >
-                  <X size={18} />
-                </button>
-              )}
-            </div>
-            <Button variant="outline" size="icon" className="h-[58px] w-[58px] rounded-2xl">
-              <Filter size={20} />
-            </Button>
-          </section>
+                  <div className={`mb-3 p-2 rounded-xl bg-[#1E1A18] w-fit ${stat.color} group-hover:scale-110 transition-transform`}>
+                    <stat.icon size={18} />
+                  </div>
+                  <div className="text-2xl font-bold text-[#E8E2D9] mb-1">{stat.value}</div>
+                  <div className="text-xs text-[#6B6560] font-medium uppercase tracking-wider">{stat.label}</div>
+                </motion.div>
+              ))}
+            </section>
+          )}
 
-          {/* Record List */}
+          {/* Search Bar (Only on Clients Tab) */}
+          {activeTab === 'records' && (
+            <section className="px-6 py-4 flex gap-3 sticky top-[88px] bg-[#1E1A18]/30 backdrop-blur-2xl border-b border-white/5 z-20">
+              <div className="relative flex-1 group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B6560] group-focus-within:text-[#C9A96E] transition-colors" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search clients or garments..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white/5 backdrop-blur-md border border-white/10 text-[#E8E2D9] rounded-2xl pl-12 pr-4 py-4 focus:border-[#C9A96E]/50 focus:bg-white/10 outline-none transition-all shadow-inner"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B6560] hover:text-[#E8E2D9]"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+              <Button variant="outline" size="icon" className="h-[58px] w-[58px] rounded-2xl">
+                <Filter size={20} />
+              </Button>
+            </section>
+          )}
+
+          {/* Tab Main Content */}
           <section className="px-6 py-4 space-y-4">
             {recordsLoading ? (
               <div className="py-24 flex flex-col items-center justify-center text-[#6B6560]">
@@ -356,7 +358,14 @@ const App: React.FC = () => {
                   Syncing Cloud...
                 </motion.p>
               </div>
+            ) : activeTab === 'reports' ? (
+              /* Reports Tab */
+              <ReportsView 
+                records={records} 
+                onSelectRecord={handleOpenDetail} 
+              />
             ) : activeTab === 'timeline' ? (
+              /* Timeline Tab */
               <div className="relative border-l border-white/10 ml-3 pl-5 space-y-6">
                 {records.length > 0 ? records.map((record, i) => (
                   <motion.div 
@@ -381,6 +390,7 @@ const App: React.FC = () => {
                 )}
               </div>
             ) : filteredRecords.length > 0 ? (
+              /* Records / Clients Tab */
               filteredRecords.map((record, i) => {
                 const balance = (parseFloat(record.charged) || 0) - (parseFloat(record.paid) || 0);
                 return (
@@ -436,29 +446,37 @@ const App: React.FC = () => {
             )}
           </section>
 
-          {/* FAB */}
+          {/* Floating Action Button (FAB) */}
           <button 
             onClick={handleOpenAdd}
             className="fixed bottom-24 right-8 w-16 h-16 bg-[#C9A96E] text-[#1E1A18] rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40"
+            title="Add New Client"
           >
             <Plus size={32} />
           </button>
 
-          {/* Navigation */}
-          <nav className="fixed bottom-0 left-0 right-0 p-4 bg-white/5 backdrop-blur-3xl border-t border-white/10 flex justify-around items-center z-30 lg:max-w-md lg:mx-auto lg:rounded-t-3xl shadow-[0_-8px_32px_rgba(0,0,0,0.3)]">
+          {/* Bottom Navigation */}
+          <nav className="fixed bottom-0 left-0 right-0 p-4 bg-white/5 backdrop-blur-3xl border-t border-white/10 flex justify-around items-center z-30 lg:max-w-lg lg:mx-auto lg:rounded-t-3xl shadow-[0_-8px_32px_rgba(0,0,0,0.3)]">
             <button 
               onClick={() => setActiveTab('records')}
               className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'records' ? 'text-[#C9A96E]' : 'text-[#6B6560]'}`}
             >
-              <Users size={24} />
+              <Users size={22} />
               <span className="text-[10px] font-bold uppercase tracking-tighter">Clients</span>
             </button>
             <button 
               onClick={() => setActiveTab('timeline')}
               className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'timeline' ? 'text-[#C9A96E]' : 'text-[#6B6560]'}`}
             >
-              <Calendar size={24} />
+              <Calendar size={22} />
               <span className="text-[10px] font-bold uppercase tracking-tighter">Timeline</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('reports')}
+              className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'reports' ? 'text-[#C9A96E]' : 'text-[#6B6560]'}`}
+            >
+              <BarChart3 size={22} />
+              <span className="text-[10px] font-bold uppercase tracking-tighter">Reports</span>
             </button>
           </nav>
 

@@ -6,6 +6,7 @@ export interface Record {
   phone: string;
   date: string;
   garment: string;
+  imageUrl?: string;
   halfBack: string;
   fullBack: string;
   chest: string;
@@ -58,55 +59,63 @@ interface LemaireDB extends DBSchema {
 const DB_NAME = 'LemaireAtelier';
 const STORE_NAME = 'records';
 const QUEUE_STORE = 'sync_queue';
-const VERSION = 3;
+const DB_VERSION = 2; // Incremented for schema updates
 
-const dbPromises = new Map<string, Promise<IDBPDatabase<LemaireDB>>>();
+let dbPromise: Promise<IDBPDatabase<LemaireDB>> | null = null;
+let currentUserId: string | null = null;
 
-export const getDB = (userId: string) => {
-  if (dbPromises.has(userId)) return dbPromises.get(userId)!;
-  
-  const dbName = `LemaireAtelier_${userId}`;
-  const promise = openDB<LemaireDB>(dbName, VERSION, {
-    upgrade(db, oldVersion, newVersion, transaction) {
-      if (oldVersion < 1) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-        store.createIndex('by-date', 'date');
-      }
-      
-      // Handle legacy data migration if needed
-      if (oldVersion === 1) {
-        // Migration logic from version 1 to 2 if needed
-      }
+export const initDB = async (userId: string): Promise<IDBPDatabase<LemaireDB>> => {
+  // If the user changes, reset the DB connection
+  if (currentUserId !== userId) {
+    if (dbPromise) {
+      const db = await dbPromise;
+      db.close();
+    }
+    dbPromise = null;
+    currentUserId = userId;
+  }
 
-      if (oldVersion < 3) {
-        if (!db.objectStoreNames.contains(QUEUE_STORE)) {
+  if (!dbPromise) {
+    const userDbName = `${DB_NAME}_${userId}`;
+    dbPromise = openDB<LemaireDB>(userDbName, DB_VERSION, {
+      upgrade(db, oldVersion, newVersion, transaction) {
+        if (oldVersion < 1) {
+          const recordStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          recordStore.createIndex('by-date', 'date');
           db.createObjectStore(QUEUE_STORE, { keyPath: 'id', autoIncrement: true });
         }
-      }
-    },
-  });
-  
-  dbPromises.set(userId, promise);
-  return promise;
+      },
+    });
+  }
+  return dbPromise;
+};
+
+export const getDB = async (userId: string) => {
+  return initDB(userId);
 };
 
 export const createDBClient = (userId: string) => ({
   async getAll(): Promise<Record[]> {
     const db = await getDB(userId);
-    const records = await db.getAll(STORE_NAME);
-    return records.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    return db.getAll(STORE_NAME);
+  },
+
+  async getById(id: string): Promise<Record | undefined> {
+    const db = await getDB(userId);
+    return db.get(STORE_NAME, id);
   },
 
   async save(record: Record): Promise<void> {
     const db = await getDB(userId);
     await db.put(STORE_NAME, record);
+    await this.enqueueSync('UPSERT', record);
   },
 
   async saveAll(records: Record[]): Promise<void> {
     const db = await getDB(userId);
     const tx = db.transaction(STORE_NAME, 'readwrite');
     for (const record of records) {
-      tx.store.put(record);
+      await tx.store.put(record);
     }
     await tx.done;
   },
@@ -114,10 +123,9 @@ export const createDBClient = (userId: string) => ({
   async delete(id: string): Promise<void> {
     const db = await getDB(userId);
     await db.delete(STORE_NAME, id);
+    await this.enqueueSync('DELETE', id);
   },
 
-  // --- Sync Queue Operations ---
-  
   async enqueueSync(action: 'UPSERT' | 'DELETE', payload: Record | string): Promise<void> {
     const db = await getDB(userId);
     await db.add(QUEUE_STORE, {
@@ -150,6 +158,7 @@ export const createDBClient = (userId: string) => ({
       phone:      r.phone      || '',
       date:       r.date       || '',
       garment:    r.garment    || '',
+      imageUrl:   r.imageUrl   || r.image || '',
       halfBack:   r.halfBack   || '',
       fullBack:   r.fullBack   || '',
       chest:      r.chest      || '',
