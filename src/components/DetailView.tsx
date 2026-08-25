@@ -80,21 +80,20 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
             variant="outline" 
             size="sm" 
             onClick={() => setIsShareModalOpen(true)}
-            disabled={sharingType !== null}
             className="flex items-center gap-2"
           >
-            {sharingType ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />} 
-            {sharingType ? 'Generating...' : 'Share'}
+            <Share2 size={16} />
+            <span>Share</span>
           </Button>
         </div>
       </section>
 
-      {/* Portal-Mounted Share Recipient Selection Modal (Guaranteed to pop up cleanly on all devices) */}
+      {/* Recipient Selection Modal (Mounted directly to document.body at z-[9999]) */}
       {typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
           {isShareModalOpen && (
-            <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
-              {/* Dark Blur Backdrop */}
+            <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4">
+              {/* Dark Backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -103,26 +102,23 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
                 className="fixed inset-0 bg-black/80 backdrop-blur-md"
               />
               
-              {/* Modal / Bottom Drawer Container */}
+              {/* Modal Container */}
               <motion.div
                 initial={{ y: '100%', opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: '100%', opacity: 0 }}
-                transition={{ type: 'spring', damping: 26, stiffness: 280 }}
+                transition={{ type: 'spring', damping: 26, stiffness: 300 }}
                 className="relative w-full sm:max-w-md bg-[#1E1A18] border-t sm:border border-[#C9A96E]/20 rounded-t-[32px] sm:rounded-3xl p-6 shadow-2xl z-10 overflow-hidden"
               >
-                {/* Mobile Handle Bar */}
+                {/* Pull Handle for mobile */}
                 <div className="sm:hidden w-full flex justify-center pb-3">
                   <div className="w-12 h-1.5 bg-white/20 rounded-full" />
                 </div>
 
-                {/* Top Accent Light */}
-                <div className="hidden sm:block absolute top-0 left-1/2 -translate-x-1/2 w-40 h-1 bg-gradient-to-r from-transparent via-[#C9A96E] to-transparent" />
-
                 <div className="flex items-center justify-between mb-5">
                   <div>
-                    <h3 className="text-xl font-bold text-[#E8E2D9]">Share Receipt</h3>
-                    <p className="text-xs text-[#8A827B] mt-0.5">Select receipt format for this order</p>
+                    <h3 className="text-xl font-bold text-[#E8E2D9]">Select Receipt Type</h3>
+                    <p className="text-xs text-[#8A827B] mt-0.5">Who are you generating this receipt for?</p>
                   </div>
                   <button
                     onClick={() => setIsShareModalOpen(false)}
@@ -136,6 +132,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
                 <div className="space-y-3">
                   {/* Option 1: Customer Receipt */}
                   <button
+                    type="button"
                     onClick={() => handleShare('customer')}
                     disabled={sharingType !== null}
                     className="w-full text-left p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] border border-white/10 hover:border-[#C9A96E]/40 transition-all flex items-center justify-between group disabled:opacity-50"
@@ -150,21 +147,26 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
                       </div>
                       <div>
                         <div className="text-base font-bold text-[#E8E2D9] group-hover:text-[#C9A96E] transition-colors flex items-center gap-2">
-                          Customer Receipt
+                          <span>Customer Receipt</span>
                           <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-[#C9A96E]/15 text-[#C9A96E]">
-                            Client
+                            Invoice Only
                           </span>
                         </div>
                         <p className="text-xs text-[#8A827B] mt-0.5 leading-relaxed">
-                          Invoice & payment summary with order specs (measurements omitted)
+                          Invoice & payment breakdown (measurements omitted)
                         </p>
                       </div>
                     </div>
-                    <ChevronRight size={18} className="text-[#8A827B] group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
+                    {sharingType === 'customer' ? (
+                      <span className="text-xs text-[#C9A96E] font-bold">Creating...</span>
+                    ) : (
+                      <ChevronRight size={18} className="text-[#8A827B] group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
+                    )}
                   </button>
 
                   {/* Option 2: Apprentice / Designer */}
                   <button
+                    type="button"
                     onClick={() => handleShare('apprentice')}
                     disabled={sharingType !== null}
                     className="w-full text-left p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] border border-white/10 hover:border-[#C9A96E]/40 transition-all flex items-center justify-between group disabled:opacity-50"
@@ -179,9 +181,9 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
                       </div>
                       <div>
                         <div className="text-base font-bold text-[#E8E2D9] group-hover:text-[#C9A96E] transition-colors flex items-center gap-2">
-                          Apprentice / Tailor
+                          <span>Apprentice / Tailor</span>
                           <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-[#C45C2A]/15 text-[#C45C2A]">
-                            Full Specs
+                            Full Measurements
                           </span>
                         </div>
                         <p className="text-xs text-[#8A827B] mt-0.5 leading-relaxed">
@@ -189,14 +191,18 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
                         </p>
                       </div>
                     </div>
-                    <ChevronRight size={18} className="text-[#8A827B] group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
+                    {sharingType === 'apprentice' ? (
+                      <span className="text-xs text-[#C45C2A] font-bold">Creating...</span>
+                    ) : (
+                      <ChevronRight size={18} className="text-[#8A827B] group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
+                    )}
                   </button>
                 </div>
 
                 {sharingType && (
                   <div className="mt-4 text-center text-xs text-[#C9A96E] flex items-center justify-center gap-2 py-2">
                     <Loader2 size={14} className="animate-spin" />
-                    Generating {sharingType === 'customer' ? 'Customer' : 'Technical'} Receipt...
+                    Generating {sharingType === 'customer' ? 'Customer' : 'Technical'} Receipt image...
                   </div>
                 )}
               </motion.div>
@@ -206,11 +212,11 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
         document.body
       )}
 
-      {/* Portal-Mounted Lightbox Modal for Reference Design */}
+      {/* Lightbox Modal for Reference Design */}
       {typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
           {isLightboxOpen && record.imageUrl && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
