@@ -17,7 +17,9 @@ import {
   X,
   ChevronRight,
   Sparkles,
-  Maximize2
+  Maximize2,
+  FileText,
+  UserCheck
 } from 'lucide-react';
 import { shareRecord, ReceiptRecipient } from '../utils/share';
 
@@ -99,7 +101,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => !sharingType && setIsShareModalOpen(false)}
-                className="fixed inset-0 bg-black/80 backdrop-blur-md"
+                className="fixed inset-0 bg-black/80 backdrop-blur-md cursor-pointer"
               />
               
               {/* Modal Container */}
@@ -108,7 +110,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: '100%', opacity: 0 }}
                 transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-                className="relative w-full sm:max-w-md bg-[#1E1A18] border-t sm:border border-[#C9A96E]/20 rounded-t-[32px] sm:rounded-3xl p-6 shadow-2xl z-10 overflow-hidden"
+                className="relative w-full sm:max-w-md bg-[#1E1A18] border-t sm:border border-[#C9A96E]/25 rounded-t-[32px] sm:rounded-3xl p-6 shadow-2xl z-10 overflow-hidden"
               >
                 {/* Pull Handle for mobile */}
                 <div className="sm:hidden w-full flex justify-center pb-3">
@@ -117,8 +119,8 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
 
                 <div className="flex items-center justify-between mb-5">
                   <div>
-                    <h3 className="text-xl font-bold text-[#E8E2D9]">Select Receipt Type</h3>
-                    <p className="text-xs text-[#8A827B] mt-0.5">Who are you generating this receipt for?</p>
+                    <h3 className="text-xl font-bold text-[#E8E2D9]">Share Receipt</h3>
+                    <p className="text-xs text-[#8A827B] mt-0.5">Select the target recipient format</p>
                   </div>
                   <button
                     onClick={() => setIsShareModalOpen(false)}
@@ -129,16 +131,20 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
                   </button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3.5">
                   {/* Option 1: Customer Receipt */}
                   <button
                     type="button"
                     onClick={() => handleShare('customer')}
                     disabled={sharingType !== null}
-                    className="w-full text-left p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] border border-white/10 hover:border-[#C9A96E]/40 transition-all flex items-center justify-between group disabled:opacity-50"
+                    className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between cursor-pointer select-none touch-manipulation active:scale-[0.98] ${
+                      sharingType === 'customer'
+                        ? 'bg-[#C9A96E]/15 border-[#C9A96E] shadow-lg shadow-[#C9A96E]/10'
+                        : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-[#C9A96E]/40'
+                    } disabled:opacity-50`}
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-12 h-12 rounded-xl bg-[#C9A96E]/10 border border-[#C9A96E]/20 flex items-center justify-center text-[#C9A96E] group-hover:scale-105 transition-transform shrink-0">
+                      <div className="w-12 h-12 rounded-xl bg-[#C9A96E]/15 border border-[#C9A96E]/30 flex items-center justify-center text-[#C9A96E] shrink-0">
                         {sharingType === 'customer' ? (
                           <Loader2 size={22} className="animate-spin text-[#C9A96E]" />
                         ) : (
@@ -146,22 +152,27 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
                         )}
                       </div>
                       <div>
-                        <div className="text-base font-bold text-[#E8E2D9] group-hover:text-[#C9A96E] transition-colors flex items-center gap-2">
+                        <div className="text-base font-bold text-[#E8E2D9] flex items-center gap-2">
                           <span>Customer Receipt</span>
-                          <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-[#C9A96E]/15 text-[#C9A96E]">
-                            Invoice Only
+                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-[#C9A96E]/20 text-[#C9A96E] border border-[#C9A96E]/30">
+                            Client Copy
                           </span>
                         </div>
                         <p className="text-xs text-[#8A827B] mt-0.5 leading-relaxed">
-                          Invoice & payment breakdown (measurements omitted)
+                          Invoice & payment summary (measurements omitted)
                         </p>
                       </div>
                     </div>
-                    {sharingType === 'customer' ? (
-                      <span className="text-xs text-[#C9A96E] font-bold">Creating...</span>
-                    ) : (
-                      <ChevronRight size={18} className="text-[#8A827B] group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
-                    )}
+
+                    <div className="shrink-0 ml-3">
+                      {sharingType === 'customer' ? (
+                        <span className="text-xs text-[#C9A96E] font-bold animate-pulse">Generating...</span>
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[#8A827B]">
+                          <ChevronRight size={18} />
+                        </div>
+                      )}
+                    </div>
                   </button>
 
                   {/* Option 2: Apprentice / Designer */}
@@ -169,10 +180,14 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
                     type="button"
                     onClick={() => handleShare('apprentice')}
                     disabled={sharingType !== null}
-                    className="w-full text-left p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] border border-white/10 hover:border-[#C9A96E]/40 transition-all flex items-center justify-between group disabled:opacity-50"
+                    className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between cursor-pointer select-none touch-manipulation active:scale-[0.98] ${
+                      sharingType === 'apprentice'
+                        ? 'bg-[#C45C2A]/15 border-[#C45C2A] shadow-lg shadow-[#C45C2A]/10'
+                        : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-[#C45C2A]/40'
+                    } disabled:opacity-50`}
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-12 h-12 rounded-xl bg-[#C45C2A]/10 border border-[#C45C2A]/20 flex items-center justify-center text-[#C45C2A] group-hover:scale-105 transition-transform shrink-0">
+                      <div className="w-12 h-12 rounded-xl bg-[#C45C2A]/15 border border-[#C45C2A]/30 flex items-center justify-center text-[#C45C2A] shrink-0">
                         {sharingType === 'apprentice' ? (
                           <Loader2 size={22} className="animate-spin text-[#C45C2A]" />
                         ) : (
@@ -180,31 +195,42 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
                         )}
                       </div>
                       <div>
-                        <div className="text-base font-bold text-[#E8E2D9] group-hover:text-[#C9A96E] transition-colors flex items-center gap-2">
+                        <div className="text-base font-bold text-[#E8E2D9] flex items-center gap-2">
                           <span>Apprentice / Tailor</span>
-                          <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-[#C45C2A]/15 text-[#C45C2A]">
-                            Full Measurements
+                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-[#C45C2A]/20 text-[#C45C2A] border border-[#C45C2A]/30">
+                            Work Order
                           </span>
                         </div>
                         <p className="text-xs text-[#8A827B] mt-0.5 leading-relaxed">
-                          Technical work order with full precision measurements & specs
+                          Technical work order with full precision measurements
                         </p>
                       </div>
                     </div>
-                    {sharingType === 'apprentice' ? (
-                      <span className="text-xs text-[#C45C2A] font-bold">Creating...</span>
-                    ) : (
-                      <ChevronRight size={18} className="text-[#8A827B] group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
-                    )}
+
+                    <div className="shrink-0 ml-3">
+                      {sharingType === 'apprentice' ? (
+                        <span className="text-xs text-[#C45C2A] font-bold animate-pulse">Generating...</span>
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[#8A827B]">
+                          <ChevronRight size={18} />
+                        </div>
+                      )}
+                    </div>
                   </button>
                 </div>
 
-                {sharingType && (
-                  <div className="mt-4 text-center text-xs text-[#C9A96E] flex items-center justify-center gap-2 py-2">
-                    <Loader2 size={14} className="animate-spin" />
-                    Generating {sharingType === 'customer' ? 'Customer' : 'Technical'} Receipt image...
-                  </div>
-                )}
+                {/* Cancel Button */}
+                <div className="mt-5 pt-3 border-t border-white/5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsShareModalOpen(false)}
+                    disabled={sharingType !== null}
+                    className="w-full py-3.5 rounded-2xl text-sm font-medium"
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </motion.div>
             </div>
           )}
