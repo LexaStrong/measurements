@@ -59,7 +59,7 @@ interface LemaireDB extends DBSchema {
 const DB_NAME = 'LemaireAtelier';
 const STORE_NAME = 'records';
 const QUEUE_STORE = 'sync_queue';
-const DB_VERSION = 2; // Incremented for schema updates
+const DB_VERSION = 4; // Bumped to 4 to exceed any existing browser database version
 
 let dbPromise: Promise<IDBPDatabase<LemaireDB>> | null = null;
 let currentUserId: string | null = null;
@@ -79,9 +79,12 @@ export const initDB = async (userId: string): Promise<IDBPDatabase<LemaireDB>> =
     const userDbName = `${DB_NAME}_${userId}`;
     dbPromise = openDB<LemaireDB>(userDbName, DB_VERSION, {
       upgrade(db, oldVersion, newVersion, transaction) {
-        if (oldVersion < 1) {
+        // Safe idempotent store initialization
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
           const recordStore = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
           recordStore.createIndex('by-date', 'date');
+        }
+        if (!db.objectStoreNames.contains(QUEUE_STORE)) {
           db.createObjectStore(QUEUE_STORE, { keyPath: 'id', autoIncrement: true });
         }
       },
