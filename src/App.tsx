@@ -32,6 +32,7 @@ import { RecordForm } from './components/RecordForm';
 import { DetailView } from './components/DetailView';
 import { ReportsView } from './components/ReportsView';
 import { NotificationsModal } from './components/NotificationsModal';
+import { ShareModal } from './components/ShareModal';
 import { getCollectionReminders, sendBrowserReminders } from './utils/notifications';
 import { createDBClient } from './utils/db';
 
@@ -46,6 +47,7 @@ const App: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [sharingRecord, setSharingRecord] = useState<Record | null>(null);
   const [editingRecord, setEditingRecord] = useState<Record | null>(null);
 
   // 3-Day Deadline Reminders & Alerts
@@ -508,6 +510,13 @@ const App: React.FC = () => {
             onSelectRecord={handleOpenDetail}
           />
 
+          {/* Share Modal (Mounted at root level to preserve client modal position) */}
+          <ShareModal
+            isOpen={!!sharingRecord}
+            record={sharingRecord}
+            onClose={() => setSharingRecord(null)}
+          />
+
           {/* Detail Sheet */}
           <Sheet 
             isOpen={isDetailOpen} 
@@ -520,6 +529,7 @@ const App: React.FC = () => {
                 onEdit={() => handleOpenEdit(selectedRecord)}
                 onDelete={() => handleDelete(selectedRecord.id)}
                 onToggleReceived={() => handleToggleReceived(selectedRecord)}
+                onShare={(rec) => setSharingRecord(rec)}
               />
             )}
           </Sheet>
