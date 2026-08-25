@@ -3,6 +3,44 @@ import { useUser } from '@clerk/clerk-react';
 import { useSupabase } from '../utils/supabase';
 import { Record, SyncQueueItem, createDBClient } from '../utils/db';
 
+const formatCloudRecord = (record: Record, userId: string) => ({
+  id: record.id,
+  user_id: userId,
+  name: record.name || '',
+  phone: record.phone || '',
+  date: record.date || '',
+  garment: record.garment || '',
+  imageUrl: record.imageUrl || '',
+  halfBack: record.halfBack || '',
+  fullBack: record.fullBack || '',
+  chest: record.chest || '',
+  stomach: record.stomach || '',
+  sleeves: record.sleeves || '',
+  topLength: record.topLength || '',
+  arm: record.arm || '',
+  shoulder: record.shoulder || '',
+  neck: record.neck || '',
+  wrist: record.wrist || '',
+  agbada: record.agbada || '',
+  cap: record.cap || '',
+  waist: record.waist || '',
+  downLength: record.downLength || '',
+  hip: record.hip || '',
+  bass: record.bass || '',
+  thigh: record.thigh || '',
+  knee: record.knee || '',
+  inseam: record.inseam || '',
+  outseam: record.outseam || '',
+  charged: record.charged || '',
+  paid: record.paid || '',
+  collection: record.collection || '',
+  receivedDate: record.receivedDate || '',
+  received: Boolean(record.received),
+  notes: record.notes || '',
+  updatedAt: record.updatedAt || new Date().toISOString(),
+  createdAt: record.createdAt || new Date().toISOString(),
+});
+
 export const useSync = (records: Record[], refresh: () => Promise<void>, db: ReturnType<typeof createDBClient> | null) => {
   const { user, isLoaded } = useUser();
   const supabase = useSupabase();
@@ -35,14 +73,18 @@ export const useSync = (records: Record[], refresh: () => Promise<void>, db: Ret
       
       for (const item of queue) {
         if (item.action === 'UPSERT') {
-          const cloudRecord = { ...(item.payload as Record), user_id: user.id };
+          const cloudRecord = formatCloudRecord(item.payload as Record, user.id);
           const { error } = await client.from('records').upsert(cloudRecord);
-          if (!error && item.id) {
+          if (error) {
+            console.error('Supabase queue upsert error:', error.message, error.details || '', error.hint || '');
+          } else if (item.id) {
             await db.removeFromSyncQueue(item.id);
           }
         } else if (item.action === 'DELETE') {
           const { error } = await client.from('records').delete().eq('id', item.payload as string);
-          if (!error && item.id) {
+          if (error) {
+            console.error('Supabase queue delete error:', error.message, error.details || '');
+          } else if (item.id) {
             await db.removeFromSyncQueue(item.id);
           }
         }
@@ -64,7 +106,7 @@ export const useSync = (records: Record[], refresh: () => Promise<void>, db: Ret
   // Initial Sync from Cloud to Local
   useEffect(() => {
     if (isLoaded && user && supabase && db) {
-      const client = supabase; // Local ref for narrowing
+      const client = supabase;
       const initialSync = async () => {
         setSyncing(true);
         try {
@@ -78,7 +120,11 @@ export const useSync = (records: Record[], refresh: () => Promise<void>, db: Ret
             .select('*')
             .eq('user_id', user.id);
 
-          if (error) throw error;
+          if (error) {
+            console.error('Initial cloud fetch error:', error.message, error.details || '');
+            throw error;
+          }
+          
           if (data) {
             // Reconcile with local DB (Cloud wins for latest updatedAt)
             const localRecords = await db.getAll();
@@ -142,12 +188,15 @@ export const useSync = (records: Record[], refresh: () => Promise<void>, db: Ret
     }
 
     const client = supabase;
-    const cloudRecord = { ...record, user_id: user.id };
+    const cloudRecord = formatCloudRecord(record, user.id);
     try {
       const { error } = await client
         .from('records')
         .upsert(cloudRecord);
-      if (error) throw error;
+      if (error) {
+        console.error('Direct cloud sync error:', error.message, error.details || '', error.hint || '');
+        throw error;
+      }
     } catch (err) {
       console.error('Sync to cloud error. Queuing for later:', err);
       await db.enqueueSync('UPSERT', record);

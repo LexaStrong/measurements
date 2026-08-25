@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Users, 
   Plus, 
@@ -31,6 +31,8 @@ import { Sheet } from './components/Sheet';
 import { RecordForm } from './components/RecordForm';
 import { DetailView } from './components/DetailView';
 import { ReportsView } from './components/ReportsView';
+import { NotificationsModal } from './components/NotificationsModal';
+import { getCollectionReminders, sendBrowserReminders } from './utils/notifications';
 import { createDBClient } from './utils/db';
 
 const App: React.FC = () => {
@@ -39,11 +41,21 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'records' | 'timeline' | 'reports'>('records');
   
-  // Sheet State
+  // Modal & Sheet State
   const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Record | null>(null);
+
+  // 3-Day Deadline Reminders & Alerts
+  const reminders = useMemo(() => getCollectionReminders(records), [records]);
+
+  useEffect(() => {
+    if (records.length > 0 && reminders.totalAlertsCount > 0) {
+      sendBrowserReminders(reminders);
+    }
+  }, [records, reminders]);
 
   const stats = useMemo(() => {
     try {
@@ -243,10 +255,18 @@ const App: React.FC = () => {
               <p className="text-[#6B6560] text-sm font-medium">Welcome back, {user?.firstName || 'Atelier'}</p>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="icon" className="relative group">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="relative group"
+                onClick={() => setIsNotificationsOpen(true)}
+                title={`${reminders.totalAlertsCount} Collection Reminders`}
+              >
                 <Bell size={20} className="group-hover:text-[#C9A96E] transition-colors" />
-                {stats.pending > 0 && (
-                  <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-[#C45C2A] rounded-full border-2 border-[#1E1A18]" />
+                {reminders.totalAlertsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#C45C2A] text-white text-[10px] font-bold rounded-full border-2 border-[#1E1A18] flex items-center justify-center animate-pulse">
+                    {reminders.totalAlertsCount}
+                  </span>
                 )}
               </Button>
               
@@ -479,6 +499,14 @@ const App: React.FC = () => {
               <span className="text-[10px] font-bold uppercase tracking-tighter">Reports</span>
             </button>
           </nav>
+
+          {/* Notifications Modal */}
+          <NotificationsModal
+            isOpen={isNotificationsOpen}
+            onClose={() => setIsNotificationsOpen(false)}
+            reminders={reminders}
+            onSelectRecord={handleOpenDetail}
+          />
 
           {/* Detail Sheet */}
           <Sheet 

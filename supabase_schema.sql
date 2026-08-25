@@ -48,17 +48,52 @@ create table if not exists public.records (
   notes text default '',
   
   -- Timestamps
-  "updatedAt" text not null,
-  "createdAt" text not null
+  "updatedAt" text not null default '',
+  "createdAt" text not null default ''
 );
 
--- Migration safety: ensure imageUrl column exists on existing installations
+-- ==========================================================
+-- 2. SCHEMA MIGRATION: Ensure ALL columns exist on existing tables
+-- ==========================================================
+alter table public.records add column if not exists name text not null default '';
+alter table public.records add column if not exists phone text default '';
+alter table public.records add column if not exists date text default '';
+alter table public.records add column if not exists garment text default '';
 alter table public.records add column if not exists "imageUrl" text default '';
+alter table public.records add column if not exists "halfBack" text default '';
+alter table public.records add column if not exists "fullBack" text default '';
+alter table public.records add column if not exists chest text default '';
+alter table public.records add column if not exists stomach text default '';
+alter table public.records add column if not exists sleeves text default '';
+alter table public.records add column if not exists "topLength" text default '';
+alter table public.records add column if not exists arm text default '';
+alter table public.records add column if not exists shoulder text default '';
+alter table public.records add column if not exists neck text default '';
+alter table public.records add column if not exists wrist text default '';
+alter table public.records add column if not exists agbada text default '';
+alter table public.records add column if not exists cap text default '';
+alter table public.records add column if not exists waist text default '';
+alter table public.records add column if not exists "downLength" text default '';
+alter table public.records add column if not exists hip text default '';
+alter table public.records add column if not exists bass text default '';
+alter table public.records add column if not exists thigh text default '';
+alter table public.records add column if not exists knee text default '';
+alter table public.records add column if not exists inseam text default '';
+alter table public.records add column if not exists outseam text default '';
+alter table public.records add column if not exists charged text default '';
+alter table public.records add column if not exists paid text default '';
+alter table public.records add column if not exists collection text default '';
+alter table public.records add column if not exists "receivedDate" text default '';
+alter table public.records add column if not exists received boolean default false;
+alter table public.records add column if not exists notes text default '';
+alter table public.records add column if not exists "updatedAt" text default '';
+alter table public.records add column if not exists "createdAt" text default '';
 
--- 2. Enable Row Level Security (RLS) on records
+-- ==========================================================
+-- 3. ROW LEVEL SECURITY (RLS) POLICIES
+-- ==========================================================
 alter table public.records enable row level security;
 
--- Policies for public.records
 drop policy if exists "Users can view their own records" on public.records;
 create policy "Users can view their own records"
   on public.records for select
@@ -80,7 +115,9 @@ create policy "Users can delete their own records"
   on public.records for delete
   using ( auth.jwt()->>'sub' = user_id );
 
--- 3. Enable Realtime for the records table (idempotent check)
+-- ==========================================================
+-- 4. REALTIME REPLICATION (Idempotent check)
+-- ==========================================================
 do $$
 begin
   if not exists (
@@ -95,7 +132,7 @@ begin
 end $$;
 
 -- ==========================================================
--- 4. STORAGE BUCKET CONFIGURATION FOR REFERENCE DESIGNS
+-- 5. STORAGE BUCKET CONFIGURATION FOR REFERENCE DESIGNS
 -- ==========================================================
 
 -- Create the public storage bucket for garment reference designs
