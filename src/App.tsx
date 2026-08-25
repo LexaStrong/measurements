@@ -14,7 +14,8 @@ import {
   Globe, 
   Download, 
   Upload, 
-  BarChart3 
+  BarChart3,
+  Smartphone
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -33,7 +34,9 @@ import { DetailView } from './components/DetailView';
 import { ReportsView } from './components/ReportsView';
 import { NotificationsModal } from './components/NotificationsModal';
 import { ShareModal } from './components/ShareModal';
+import { InstallPromptModal } from './components/InstallPromptModal';
 import { getCollectionReminders, sendBrowserReminders } from './utils/notifications';
+import { usePWAInstall } from './hooks/usePWAInstall';
 import { createDBClient } from './utils/db';
 
 const App: React.FC = () => {
@@ -47,8 +50,12 @@ const App: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [sharingRecord, setSharingRecord] = useState<Record | null>(null);
   const [editingRecord, setEditingRecord] = useState<Record | null>(null);
+
+  // PWA Install Manager
+  const { isStandalone, canInstall, isIOS, hasNativePrompt, triggerInstall } = usePWAInstall();
 
   // 3-Day Deadline Reminders & Alerts
   const reminders = useMemo(() => getCollectionReminders(records), [records]);
@@ -58,6 +65,17 @@ const App: React.FC = () => {
       sendBrowserReminders(reminders);
     }
   }, [records, reminders]);
+
+  const handleInstallClick = async () => {
+    if (hasNativePrompt) {
+      const outcome = await triggerInstall();
+      if (outcome === 'accepted') {
+        setIsInstallModalOpen(false);
+      }
+    } else {
+      setIsInstallModalOpen(true);
+    }
+  };
 
   const stats = useMemo(() => {
     try {
@@ -193,7 +211,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen selection:bg-[#C9A96E] selection:text-[#1E1A18] bg-[#1E1A18] text-[#E8E2D9] relative overflow-hidden">
+    <div className="min-h-screen selection:bg-[#C9A96E] selection:text-[#1E1A18] bg-[#1E1A18] text-[#E8E2D9] relative overflow-hidden safe-top safe-bottom">
       {/* Global Background Decoration */}
       <div className="fixed top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#C9A96E] opacity-10 blur-[150px] rounded-full pointer-events-none" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#C45C2A] opacity-10 blur-[150px] rounded-full pointer-events-none" />
@@ -214,18 +232,30 @@ const App: React.FC = () => {
             <h1 className="text-5xl font-bold mb-4 tracking-tight leading-tight">
               Lemaire <span className="text-[#C9A96E]">Atelier</span>
             </h1>
-            <p className="text-[#6B6560] text-lg mb-12 font-medium leading-relaxed">
+            <p className="text-[#6B6560] text-lg mb-8 font-medium leading-relaxed">
               Professional measurement tracking for elite tailors. Real-time syncing, cross-device access, and precision data.
             </p>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               <SignInButton mode="modal">
                 <Button variant="gold" size="lg" className="w-full h-16 text-lg rounded-2xl">
                   Get Started
                 </Button>
               </SignInButton>
+
+              {!isStandalone && canInstall && (
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  onClick={handleInstallClick}
+                  className="w-full h-14 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 border-white/10 hover:border-[#C9A96E]/40 text-[#E8E2D9] transition-all"
+                >
+                  <Smartphone size={18} className="text-[#C9A96E]" />
+                  <span>Install App on Device</span>
+                </Button>
+              )}
               
-              <div className="pt-8 grid grid-cols-3 gap-4">
+              <div className="pt-6 grid grid-cols-3 gap-4">
                 {[
                   { icon: Globe, label: 'Cloud' },
                   { icon: Zap, label: 'Realtime' },
@@ -256,7 +286,21 @@ const App: React.FC = () => {
               <h1 className="text-3xl font-bold tracking-tight text-[#E8E2D9]">Lemaire</h1>
               <p className="text-[#6B6560] text-sm font-medium">Welcome back, {user?.firstName || 'Atelier'}</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
+              {/* Install App Header Button (when in browser mode) */}
+              {!isStandalone && canInstall && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleInstallClick}
+                  className="h-10 px-3 rounded-2xl bg-[#C9A96E]/10 border-[#C9A96E]/30 text-[#C9A96E] hover:bg-[#C9A96E]/20 flex items-center gap-1.5 text-xs font-bold transition-all shadow-sm"
+                  title="Install App on Device"
+                >
+                  <Smartphone size={16} />
+                  <span className="hidden md:inline">Install App</span>
+                </Button>
+              )}
+
               <Button 
                 variant="outline" 
                 size="icon" 
@@ -515,6 +559,18 @@ const App: React.FC = () => {
             isOpen={!!sharingRecord}
             record={sharingRecord}
             onClose={() => setSharingRecord(null)}
+          />
+
+          {/* Install Prompt Modal */}
+          <InstallPromptModal
+            isOpen={isInstallModalOpen}
+            onClose={() => setIsInstallModalOpen(false)}
+            isIOS={isIOS}
+            hasNativePrompt={hasNativePrompt}
+            onInstall={async () => {
+              await triggerInstall();
+              setIsInstallModalOpen(false);
+            }}
           />
 
           {/* Detail Sheet */}
