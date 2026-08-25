@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Record } from '../utils/db';
 import { TopSVG, DownSVG } from '../utils/svg';
@@ -80,6 +81,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
             size="sm" 
             onClick={() => setIsShareModalOpen(true)}
             disabled={sharingType !== null}
+            className="flex items-center gap-2"
           >
             {sharingType ? <Loader2 size={16} className="animate-spin" /> : <Share2 size={16} />} 
             {sharingType ? 'Generating...' : 'Share'}
@@ -87,149 +89,162 @@ export const DetailView: React.FC<DetailViewProps> = ({ record, onEdit, onDelete
         </div>
       </section>
 
-      {/* Share Recipient Selection Modal */}
-      <AnimatePresence>
-        {isShareModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => !sharingType && setIsShareModalOpen(false)}
-              className="absolute inset-0 bg-black/75 backdrop-blur-md"
-            />
-            
-            <motion.div
-              initial={{ scale: 0.92, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.92, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-              className="relative w-full max-w-md bg-[#1E1A18] border border-[#C9A96E]/20 rounded-3xl p-6 shadow-2xl z-10 overflow-hidden"
-            >
-              {/* Top Accent Light */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-1 bg-gradient-to-r from-transparent via-[#C9A96E] to-transparent" />
-
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h3 className="text-xl font-bold text-[#E8E2D9]">Share Receipt</h3>
-                  <p className="text-xs text-[#8A827B] mt-0.5">Choose target recipient format</p>
-                </div>
-                <button
-                  onClick={() => setIsShareModalOpen(false)}
-                  disabled={sharingType !== null}
-                  className="p-1.5 rounded-full bg-white/5 text-[#8A827B] hover:text-[#E8E2D9] hover:bg-white/10 transition-colors disabled:opacity-50"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {/* Option 1: Customer Receipt */}
-                <button
-                  onClick={() => handleShare('customer')}
-                  disabled={sharingType !== null}
-                  className="w-full text-left p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-[#C9A96E]/40 transition-all flex items-center justify-between group disabled:opacity-50"
-                >
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-[#C9A96E]/10 border border-[#C9A96E]/20 flex items-center justify-center text-[#C9A96E] group-hover:scale-105 transition-transform">
-                      {sharingType === 'customer' ? (
-                        <Loader2 size={22} className="animate-spin text-[#C9A96E]" />
-                      ) : (
-                        <Receipt size={22} />
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-base font-bold text-[#E8E2D9] group-hover:text-[#C9A96E] transition-colors flex items-center gap-2">
-                        Customer Receipt
-                        <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-[#C9A96E]/15 text-[#C9A96E]">
-                          Client
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#8A827B] mt-0.5">
-                        Invoice, payment summary & order specs (measurements omitted)
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronRight size={18} className="text-[#8A827B] group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
-                </button>
-
-                {/* Option 2: Apprentice / Designer */}
-                <button
-                  onClick={() => handleShare('apprentice')}
-                  disabled={sharingType !== null}
-                  className="w-full text-left p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-[#C9A96E]/40 transition-all flex items-center justify-between group disabled:opacity-50"
-                >
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-[#C45C2A]/10 border border-[#C45C2A]/20 flex items-center justify-center text-[#C45C2A] group-hover:scale-105 transition-transform">
-                      {sharingType === 'apprentice' ? (
-                        <Loader2 size={22} className="animate-spin text-[#C45C2A]" />
-                      ) : (
-                        <Scissors size={22} />
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-base font-bold text-[#E8E2D9] group-hover:text-[#C9A96E] transition-colors flex items-center gap-2">
-                        Apprentice / Tailor
-                        <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-[#C45C2A]/15 text-[#C45C2A]">
-                          Full Specs
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#8A827B] mt-0.5">
-                        Technical work order with full precision measurements & specs
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronRight size={18} className="text-[#8A827B] group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
-                </button>
-              </div>
-
-              {sharingType && (
-                <div className="mt-4 text-center text-xs text-[#C9A96E] flex items-center justify-center gap-2">
-                  <Loader2 size={14} className="animate-spin" />
-                  Generating {sharingType === 'customer' ? 'Customer' : 'Technical'} Receipt...
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Lightbox Modal for Reference Design */}
-      <AnimatePresence>
-        {isLightboxOpen && record.imageUrl && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsLightboxOpen(false)}
-              className="absolute inset-0 bg-black/90 backdrop-blur-lg"
-            />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-4xl max-h-[85vh] z-10 flex flex-col items-center"
-            >
-              <button
-                onClick={() => setIsLightboxOpen(false)}
-                className="absolute -top-12 right-0 p-2 rounded-full bg-white/10 text-[#E8E2D9] hover:bg-white/20 transition-colors"
-                title="Close Lightbox"
-              >
-                <X size={20} />
-              </button>
-              <img
-                src={record.imageUrl}
-                alt={`${record.name}'s Reference Design`}
-                className="max-h-[80vh] max-w-full rounded-2xl object-contain shadow-2xl border border-white/20"
+      {/* Portal-Mounted Share Recipient Selection Modal (Guaranteed to pop up cleanly on all devices) */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isShareModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+              {/* Dark Blur Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => !sharingType && setIsShareModalOpen(false)}
+                className="fixed inset-0 bg-black/80 backdrop-blur-md"
               />
-              <div className="mt-3 text-center text-xs text-[#8A827B]">
-                {record.name} • {record.garment || 'Reference Design'}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              
+              {/* Modal / Bottom Drawer Container */}
+              <motion.div
+                initial={{ y: '100%', opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: '100%', opacity: 0 }}
+                transition={{ type: 'spring', damping: 26, stiffness: 280 }}
+                className="relative w-full sm:max-w-md bg-[#1E1A18] border-t sm:border border-[#C9A96E]/20 rounded-t-[32px] sm:rounded-3xl p-6 shadow-2xl z-10 overflow-hidden"
+              >
+                {/* Mobile Handle Bar */}
+                <div className="sm:hidden w-full flex justify-center pb-3">
+                  <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+                </div>
+
+                {/* Top Accent Light */}
+                <div className="hidden sm:block absolute top-0 left-1/2 -translate-x-1/2 w-40 h-1 bg-gradient-to-r from-transparent via-[#C9A96E] to-transparent" />
+
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <h3 className="text-xl font-bold text-[#E8E2D9]">Share Receipt</h3>
+                    <p className="text-xs text-[#8A827B] mt-0.5">Select receipt format for this order</p>
+                  </div>
+                  <button
+                    onClick={() => setIsShareModalOpen(false)}
+                    disabled={sharingType !== null}
+                    className="p-2 rounded-full bg-white/5 text-[#8A827B] hover:text-[#E8E2D9] hover:bg-white/10 transition-colors disabled:opacity-50"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Option 1: Customer Receipt */}
+                  <button
+                    onClick={() => handleShare('customer')}
+                    disabled={sharingType !== null}
+                    className="w-full text-left p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] border border-white/10 hover:border-[#C9A96E]/40 transition-all flex items-center justify-between group disabled:opacity-50"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-xl bg-[#C9A96E]/10 border border-[#C9A96E]/20 flex items-center justify-center text-[#C9A96E] group-hover:scale-105 transition-transform shrink-0">
+                        {sharingType === 'customer' ? (
+                          <Loader2 size={22} className="animate-spin text-[#C9A96E]" />
+                        ) : (
+                          <Receipt size={22} />
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-base font-bold text-[#E8E2D9] group-hover:text-[#C9A96E] transition-colors flex items-center gap-2">
+                          Customer Receipt
+                          <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-[#C9A96E]/15 text-[#C9A96E]">
+                            Client
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#8A827B] mt-0.5 leading-relaxed">
+                          Invoice & payment summary with order specs (measurements omitted)
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className="text-[#8A827B] group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
+                  </button>
+
+                  {/* Option 2: Apprentice / Designer */}
+                  <button
+                    onClick={() => handleShare('apprentice')}
+                    disabled={sharingType !== null}
+                    className="w-full text-left p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] border border-white/10 hover:border-[#C9A96E]/40 transition-all flex items-center justify-between group disabled:opacity-50"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-xl bg-[#C45C2A]/10 border border-[#C45C2A]/20 flex items-center justify-center text-[#C45C2A] group-hover:scale-105 transition-transform shrink-0">
+                        {sharingType === 'apprentice' ? (
+                          <Loader2 size={22} className="animate-spin text-[#C45C2A]" />
+                        ) : (
+                          <Scissors size={22} />
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-base font-bold text-[#E8E2D9] group-hover:text-[#C9A96E] transition-colors flex items-center gap-2">
+                          Apprentice / Tailor
+                          <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-[#C45C2A]/15 text-[#C45C2A]">
+                            Full Specs
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#8A827B] mt-0.5 leading-relaxed">
+                          Technical work order with full precision measurements & specs
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className="text-[#8A827B] group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
+                  </button>
+                </div>
+
+                {sharingType && (
+                  <div className="mt-4 text-center text-xs text-[#C9A96E] flex items-center justify-center gap-2 py-2">
+                    <Loader2 size={14} className="animate-spin" />
+                    Generating {sharingType === 'customer' ? 'Customer' : 'Technical'} Receipt...
+                  </div>
+                )}
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Portal-Mounted Lightbox Modal for Reference Design */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isLightboxOpen && record.imageUrl && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsLightboxOpen(false)}
+                className="fixed inset-0 bg-black/90 backdrop-blur-lg"
+              />
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="relative max-w-4xl max-h-[85vh] z-10 flex flex-col items-center"
+              >
+                <button
+                  onClick={() => setIsLightboxOpen(false)}
+                  className="absolute -top-12 right-0 p-2 rounded-full bg-white/10 text-[#E8E2D9] hover:bg-white/20 transition-colors"
+                  title="Close Lightbox"
+                >
+                  <X size={20} />
+                </button>
+                <img
+                  src={record.imageUrl}
+                  alt={`${record.name}'s Reference Design`}
+                  className="max-h-[80vh] max-w-full rounded-2xl object-contain shadow-2xl border border-white/20"
+                />
+                <div className="mt-3 text-center text-xs text-[#8A827B]">
+                  {record.name} • {record.garment || 'Reference Design'}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Status Banners */}
       <section className="space-y-3">
