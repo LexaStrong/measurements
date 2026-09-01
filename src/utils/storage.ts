@@ -76,10 +76,11 @@ export const uploadReferenceDesign = async (
   supabase: SupabaseClient,
   userId: string,
   recordId: string,
-  imageBlob: Blob
+  imageBlob: Blob,
+  index = 0
 ): Promise<string> => {
   const timestamp = Date.now();
-  const filePath = `${userId}/${recordId}_${timestamp}.jpg`;
+  const filePath = `${userId}/${recordId}_${timestamp}_${index}.jpg`;
 
   const { error: uploadError } = await supabase.storage
     .from('garment-designs')
@@ -94,4 +95,30 @@ export const uploadReferenceDesign = async (
 
   const { data } = supabase.storage.from('garment-designs').getPublicUrl(filePath);
   return data.publicUrl;
+};
+
+/**
+ * Uploads multiple reference design images in parallel or with fallback.
+ */
+export const uploadReferenceDesigns = async (
+  supabase: SupabaseClient,
+  userId: string,
+  recordId: string,
+  images: Array<{ url: string; blob?: Blob | null }>
+): Promise<string[]> => {
+  const results = await Promise.all(
+    images.map(async (img, idx) => {
+      if (img.blob) {
+        try {
+          return await uploadReferenceDesign(supabase, userId, recordId, img.blob, idx);
+        } catch (err) {
+          console.warn(`Upload failed for image ${idx}, using local dataUrl:`, err);
+          return img.url;
+        }
+      }
+      return img.url;
+    })
+  );
+
+  return results.filter(Boolean);
 };

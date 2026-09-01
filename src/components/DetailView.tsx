@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Record } from '../utils/db';
@@ -13,7 +13,10 @@ import {
   Edit3, 
   X,
   Sparkles,
-  Maximize2
+  Maximize2,
+  ChevronLeft,
+  ChevronRight,
+  Layers
 } from 'lucide-react';
 
 interface DetailViewProps {
@@ -32,6 +35,45 @@ export const DetailView: React.FC<DetailViewProps> = ({
   onShare 
 }) => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  // Extract all images safely
+  const images: string[] = (() => {
+    if (record.imageUrls && Array.isArray(record.imageUrls) && record.imageUrls.length > 0) {
+      return record.imageUrls.filter(Boolean);
+    }
+    if (record.imageUrl) {
+      if (typeof record.imageUrl === 'string' && record.imageUrl.trim().startsWith('[') && record.imageUrl.trim().endsWith(']')) {
+        try {
+          const parsed = JSON.parse(record.imageUrl);
+          if (Array.isArray(parsed)) return parsed.filter(Boolean);
+        } catch {}
+      }
+      return [record.imageUrl].filter(Boolean);
+    }
+    return [];
+  })();
+
+  const currentImage = images[activeImageIndex] || images[0] || '';
+
+  // Keyboard navigation for Lightbox
+  useEffect(() => {
+    if (!isLightboxOpen || images.length <= 1) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        setActiveImageIndex((prev) => (prev + 1) % images.length);
+      } else if (e.key === 'ArrowLeft') {
+        setActiveImageIndex((prev) => (prev - 1 + images.length) % images.length);
+      } else if (e.key === 'Escape') {
+        setIsLightboxOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLightboxOpen, images.length]);
+
   const balance = (parseFloat(record.charged) || 0) - (parseFloat(record.paid) || 0);
   
   const getCollectionStatus = () => {
@@ -78,38 +120,91 @@ export const DetailView: React.FC<DetailViewProps> = ({
         </div>
       </section>
 
-      {/* Lightbox Modal for Reference Design */}
+      {/* Lightbox Modal for Reference Designs */}
       {typeof document !== 'undefined' && createPortal(
         <AnimatePresence>
-          {isLightboxOpen && record.imageUrl && (
+          {isLightboxOpen && images.length > 0 && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsLightboxOpen(false)}
-                className="fixed inset-0 bg-black/90 backdrop-blur-lg cursor-pointer"
+                className="fixed inset-0 bg-black/95 backdrop-blur-lg cursor-pointer"
               />
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="relative max-w-4xl max-h-[85vh] z-10 flex flex-col items-center"
+                className="relative max-w-4xl w-full max-h-[90vh] z-10 flex flex-col items-center"
               >
+                {/* Close Button */}
                 <button
                   onClick={() => setIsLightboxOpen(false)}
-                  className="absolute -top-12 right-0 p-2 rounded-full bg-white/10 text-[#E8E2D9] hover:bg-white/20 transition-colors"
+                  className="absolute -top-12 right-0 p-2 rounded-full bg-white/10 text-[#E8E2D9] hover:bg-white/20 transition-colors z-20"
                   title="Close Lightbox"
                 >
                   <X size={20} />
                 </button>
-                <img
-                  src={record.imageUrl}
-                  alt={`${record.name}'s Reference Design`}
-                  className="max-h-[80vh] max-w-full rounded-2xl object-contain shadow-2xl border border-white/20"
-                />
-                <div className="mt-3 text-center text-xs text-[#8A827B]">
-                  {record.name} • {record.garment || 'Reference Design'}
+
+                {/* Main Lightbox Image Container */}
+                <div className="relative w-full max-h-[70vh] flex items-center justify-center">
+                  {images.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveImageIndex((prev) => (prev - 1 + images.length) % images.length);
+                      }}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/70 hover:bg-[#C9A96E] text-[#E8E2D9] hover:text-[#1E1A18] transition-all z-10 shadow-lg border border-white/10"
+                      title="Previous Image"
+                    >
+                      <ChevronLeft size={22} />
+                    </button>
+                  )}
+
+                  <img
+                    src={currentImage}
+                    alt={`${record.name}'s Reference Design ${activeImageIndex + 1}`}
+                    className="max-h-[70vh] max-w-full rounded-2xl object-contain shadow-2xl border border-white/20 select-none"
+                  />
+
+                  {images.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveImageIndex((prev) => (prev + 1) % images.length);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/70 hover:bg-[#C9A96E] text-[#E8E2D9] hover:text-[#1E1A18] transition-all z-10 shadow-lg border border-white/10"
+                      title="Next Image"
+                    >
+                      <ChevronRight size={22} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Image Counter & Thumbnails Bar */}
+                <div className="mt-4 flex flex-col items-center gap-2">
+                  <div className="text-xs text-[#8A827B] font-medium">
+                    {record.name} • Photo {activeImageIndex + 1} of {images.length}
+                  </div>
+
+                  {images.length > 1 && (
+                    <div className="flex items-center gap-2 max-w-md overflow-x-auto py-1 px-2">
+                      {images.map((imgUrl, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setActiveImageIndex(idx)}
+                          className={`w-12 h-12 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${
+                            idx === activeImageIndex
+                              ? 'border-[#C9A96E] scale-105 shadow-md shadow-[#C9A96E]/20'
+                              : 'border-white/20 opacity-60 hover:opacity-100'
+                          }`}
+                        >
+                          <img src={imgUrl} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             </div>
@@ -141,13 +236,13 @@ export const DetailView: React.FC<DetailViewProps> = ({
         )}
       </section>
 
-      {/* Reference Design Section (If attached) */}
-      {record.imageUrl && (
+      {/* Reference Design Multi-Image Section */}
+      {images.length > 0 && (
         <section className="bg-white/5 backdrop-blur-md p-5 rounded-[24px] border border-white/10 shadow-lg group">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-bold text-[#C9A96E] uppercase tracking-widest flex items-center gap-1.5">
               <Sparkles size={14} />
-              <span>Garment Reference Design</span>
+              <span>Reference Designs ({images.length})</span>
             </h3>
             <button
               onClick={() => setIsLightboxOpen(true)}
@@ -158,21 +253,52 @@ export const DetailView: React.FC<DetailViewProps> = ({
             </button>
           </div>
 
+          {/* Featured Image Viewer */}
           <div 
             onClick={() => setIsLightboxOpen(true)}
-            className="relative h-64 w-full rounded-2xl overflow-hidden bg-black/40 border border-white/10 cursor-pointer group/img flex items-center justify-center"
+            className="relative h-64 w-full rounded-2xl overflow-hidden bg-black/40 border border-white/10 cursor-pointer group/img flex items-center justify-center shadow-inner"
           >
             <img 
-              src={record.imageUrl} 
+              src={currentImage} 
               alt="Reference Design" 
               className="w-full h-full object-contain group-hover/img:scale-105 transition-transform duration-300"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity flex items-end justify-center pb-3">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity flex items-end justify-between p-3">
               <span className="text-xs font-semibold text-[#E8E2D9] px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center gap-1.5">
                 <Maximize2 size={12} /> Tap to zoom
               </span>
+              {images.length > 1 && (
+                <span className="text-xs font-medium text-[#C9A96E] px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-[#C9A96E]/30 flex items-center gap-1">
+                  <Layers size={12} /> {activeImageIndex + 1} of {images.length}
+                </span>
+              )}
             </div>
           </div>
+
+          {/* Thumbnails Row if multiple photos */}
+          {images.length > 1 && (
+            <div className="flex items-center gap-2.5 mt-3 overflow-x-auto pb-1">
+              {images.map((imgUrl, idx) => (
+                <button
+                  key={idx}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveImageIndex(idx);
+                  }}
+                  className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${
+                    idx === activeImageIndex
+                      ? 'border-[#C9A96E] scale-105 shadow-md shadow-[#C9A96E]/20 ring-2 ring-[#C9A96E]/30'
+                      : 'border-white/10 opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  <span className="absolute bottom-0.5 right-1 text-[9px] font-mono text-white/80 bg-black/50 px-1 rounded">
+                    #{idx + 1}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </section>
       )}
 

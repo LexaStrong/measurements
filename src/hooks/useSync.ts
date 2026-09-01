@@ -3,43 +3,51 @@ import { useUser } from '@clerk/clerk-react';
 import { useSupabase } from '../utils/supabase';
 import { Record, SyncQueueItem, createDBClient } from '../utils/db';
 
-const formatCloudRecord = (record: Record, userId: string) => ({
-  id: record.id,
-  user_id: userId,
-  name: record.name || '',
-  phone: record.phone || '',
-  date: record.date || '',
-  garment: record.garment || '',
-  imageUrl: record.imageUrl || '',
-  halfBack: record.halfBack || '',
-  fullBack: record.fullBack || '',
-  chest: record.chest || '',
-  stomach: record.stomach || '',
-  sleeves: record.sleeves || '',
-  topLength: record.topLength || '',
-  arm: record.arm || '',
-  shoulder: record.shoulder || '',
-  neck: record.neck || '',
-  wrist: record.wrist || '',
-  agbada: record.agbada || '',
-  cap: record.cap || '',
-  waist: record.waist || '',
-  downLength: record.downLength || '',
-  hip: record.hip || '',
-  bass: record.bass || '',
-  thigh: record.thigh || '',
-  knee: record.knee || '',
-  inseam: record.inseam || '',
-  outseam: record.outseam || '',
-  charged: record.charged || '',
-  paid: record.paid || '',
-  collection: record.collection || '',
-  receivedDate: record.receivedDate || '',
-  received: Boolean(record.received),
-  notes: record.notes || '',
-  updatedAt: record.updatedAt || new Date().toISOString(),
-  createdAt: record.createdAt || new Date().toISOString(),
-});
+const formatCloudRecord = (record: Record, userId: string) => {
+  const images = (record.imageUrls && record.imageUrls.length > 0)
+    ? record.imageUrls
+    : (record.imageUrl ? [record.imageUrl] : []);
+  
+  const serializedImage = images.length > 1 ? JSON.stringify(images) : (images[0] || '');
+
+  return {
+    id: record.id,
+    user_id: userId,
+    name: record.name || '',
+    phone: record.phone || '',
+    date: record.date || '',
+    garment: record.garment || '',
+    imageUrl: serializedImage,
+    halfBack: record.halfBack || '',
+    fullBack: record.fullBack || '',
+    chest: record.chest || '',
+    stomach: record.stomach || '',
+    sleeves: record.sleeves || '',
+    topLength: record.topLength || '',
+    arm: record.arm || '',
+    shoulder: record.shoulder || '',
+    neck: record.neck || '',
+    wrist: record.wrist || '',
+    agbada: record.agbada || '',
+    cap: record.cap || '',
+    waist: record.waist || '',
+    downLength: record.downLength || '',
+    hip: record.hip || '',
+    bass: record.bass || '',
+    thigh: record.thigh || '',
+    knee: record.knee || '',
+    inseam: record.inseam || '',
+    outseam: record.outseam || '',
+    charged: record.charged || '',
+    paid: record.paid || '',
+    collection: record.collection || '',
+    receivedDate: record.receivedDate || '',
+    received: Boolean(record.received),
+    notes: record.notes || '',
+    updatedAt: record.updatedAt || new Date().toISOString(),
+    createdAt: record.createdAt || new Date().toISOString(),
+  };
+};
 
 export const useSync = (records: Record[], refresh: () => Promise<void>, db: ReturnType<typeof createDBClient> | null) => {
   const { user, isLoaded } = useUser();

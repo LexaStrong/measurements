@@ -7,6 +7,7 @@ export interface Record {
   date: string;
   garment: string;
   imageUrl?: string;
+  imageUrls?: string[];
   halfBack: string;
   fullBack: string;
   chest: string;
@@ -64,6 +65,74 @@ const DB_VERSION = 4; // Bumped to 4 to exceed any existing browser database ver
 let dbPromise: Promise<IDBPDatabase<LemaireDB>> | null = null;
 let currentUserId: string | null = null;
 
+export const parseRecordImages = (r: any): { imageUrl: string; imageUrls: string[] } => {
+  let urls: string[] = [];
+
+  if (Array.isArray(r.imageUrls) && r.imageUrls.length > 0) {
+    urls = r.imageUrls.filter(Boolean);
+  } else if (r.imageUrl) {
+    if (typeof r.imageUrl === 'string' && r.imageUrl.trim().startsWith('[') && r.imageUrl.trim().endsWith(']')) {
+      try {
+        const parsed = JSON.parse(r.imageUrl);
+        if (Array.isArray(parsed)) {
+          urls = parsed.filter(Boolean);
+        }
+      } catch {
+        urls = [r.imageUrl];
+      }
+    } else if (typeof r.imageUrl === 'string' && r.imageUrl.trim()) {
+      urls = [r.imageUrl.trim()];
+    }
+  } else if (r.image && typeof r.image === 'string' && r.image.trim()) {
+    urls = [r.image.trim()];
+  }
+
+  const primary = urls[0] || (typeof r.imageUrl === 'string' ? r.imageUrl : '') || '';
+  return { imageUrl: primary, imageUrls: urls };
+};
+
+export const normalizeRecord = (r: any): Record => {
+  const { imageUrl, imageUrls } = parseRecordImages(r);
+
+  return {
+    id:         r.id         || Math.random().toString(36).slice(2, 11),
+    name:       r.name       || '',
+    phone:      r.phone      || '',
+    date:       r.date       || '',
+    garment:    r.garment    || '',
+    imageUrl:   imageUrl,
+    imageUrls:  imageUrls,
+    halfBack:   r.halfBack   || '',
+    fullBack:   r.fullBack   || '',
+    chest:      r.chest      || '',
+    stomach:    r.stomach    || '',
+    sleeves:    r.sleeves    || '',
+    topLength:  r.topLength  || r.topLen || '',
+    arm:        r.arm        || '',
+    shoulder:   r.shoulder   || '',
+    neck:       r.neck       || '',
+    wrist:      r.wrist      || '',
+    agbada:     r.agbada     || '',
+    cap:        r.cap        || '',
+    waist:      r.waist      || '',
+    downLength: r.downLength || r.downLen || '',
+    hip:        r.hip        || '',
+    bass:       r.bass       || '',
+    thigh:      r.thigh      || '',
+    knee:       r.knee       || '',
+    inseam:     r.inseam     || '',
+    outseam:    r.outseam    || '',
+    charged:    r.charged    || '',
+    paid:       r.paid       || '',
+    collection: r.collection || '',
+    receivedDate: r.receivedDate || r.rcvDate || '',
+    received:   !!r.received,
+    notes:      r.notes      || '',
+    updatedAt:  r.updatedAt  || new Date().toISOString(),
+    createdAt:  r.createdAt  || r.updatedAt || new Date().toISOString(),
+  };
+};
+
 export const initDB = async (userId: string): Promise<IDBPDatabase<LemaireDB>> => {
   // If the user changes, reset the DB connection
   if (currentUserId !== userId) {
@@ -100,25 +169,29 @@ export const getDB = async (userId: string) => {
 export const createDBClient = (userId: string) => ({
   async getAll(): Promise<Record[]> {
     const db = await getDB(userId);
-    return db.getAll(STORE_NAME);
+    const records = await db.getAll(STORE_NAME);
+    return records.map(normalizeRecord);
   },
 
   async getById(id: string): Promise<Record | undefined> {
     const db = await getDB(userId);
-    return db.get(STORE_NAME, id);
+    const record = await db.get(STORE_NAME, id);
+    return record ? normalizeRecord(record) : undefined;
   },
 
   async save(record: Record): Promise<void> {
     const db = await getDB(userId);
-    await db.put(STORE_NAME, record);
-    await this.enqueueSync('UPSERT', record);
+    const normalized = normalizeRecord(record);
+    await db.put(STORE_NAME, normalized);
+    await this.enqueueSync('UPSERT', normalized);
   },
 
   async saveAll(records: Record[]): Promise<void> {
     const db = await getDB(userId);
     const tx = db.transaction(STORE_NAME, 'readwrite');
     for (const record of records) {
-      await tx.store.put(record);
+      const normalized = normalizeRecord(record);
+      await tx.store.put(normalized);
     }
     await tx.done;
   },
@@ -133,7 +206,7 @@ export const createDBClient = (userId: string) => ({
     const db = await getDB(userId);
     await db.add(QUEUE_STORE, {
       action,
-      payload,
+      payload: typeof payload === 'object' ? normalizeRecord(payload) : payload,
       timestamp: Date.now()
     });
   },
@@ -155,41 +228,6 @@ export const createDBClient = (userId: string) => ({
   },
   
   migrateLegacy(data: any[]): Record[] {
-    return data.map(r => ({
-      id:         r.id         || Math.random().toString(36).slice(2, 11),
-      name:       r.name       || '',
-      phone:      r.phone      || '',
-      date:       r.date       || '',
-      garment:    r.garment    || '',
-      imageUrl:   r.imageUrl   || r.image || '',
-      halfBack:   r.halfBack   || '',
-      fullBack:   r.fullBack   || '',
-      chest:      r.chest      || '',
-      stomach:    r.stomach    || '',
-      sleeves:    r.sleeves    || '',
-      topLength:  r.topLength  || r.topLen || '',
-      arm:        r.arm        || '',
-      shoulder:   r.shoulder   || '',
-      neck:       r.neck       || '',
-      wrist:      r.wrist      || '',
-      agbada:     r.agbada     || '',
-      cap:        r.cap        || '',
-      waist:      r.waist      || '',
-      downLength: r.downLength || r.downLen || '',
-      hip:        r.hip        || '',
-      bass:       r.bass       || '',
-      thigh:      r.thigh      || '',
-      knee:       r.knee       || '',
-      inseam:     r.inseam     || '',
-      outseam:    r.outseam    || '',
-      charged:    r.charged    || '',
-      paid:       r.paid       || '',
-      collection: r.collection || '',
-      receivedDate: r.receivedDate || r.rcvDate || '',
-      received:   !!r.received,
-      notes:      r.notes      || '',
-      updatedAt:  r.updatedAt  || new Date().toISOString(),
-      createdAt:  r.createdAt  || r.updatedAt || new Date().toISOString(),
-    }));
+    return data.map(normalizeRecord);
   }
 });

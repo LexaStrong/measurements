@@ -139,7 +139,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, record, onClose 
                       </span>
                     </div>
                     <p className="text-xs text-[#8A827B] mt-0.5 leading-relaxed">
-                      Technical work order with full precision measurements
+                      Technical work order & measurements (pricing omitted)
                     </p>
                   </div>
                 </div>

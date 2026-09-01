@@ -16,9 +16,9 @@ export const generateReceipt = async (
 
   const isCustomer = recipient === 'customer';
 
-  // Dimensions: 800x1000 for customer invoice, 800x1200 for apprentice work order
+  // Dimensions: 800x980 for customer invoice, 800x920 for apprentice work order (pricing omitted)
   canvas.width = 800;
-  canvas.height = isCustomer ? 980 : 1200;
+  canvas.height = isCustomer ? 980 : 920;
 
   // Colors
   const colors = {
@@ -241,35 +241,6 @@ export const generateReceipt = async (
     ctx.font = 'bold 16px Inter, sans-serif';
     ctx.fillText('BOTTOM GARMENT', 440, 388);
     drawList(downMeasurements, 440, 420);
-
-    // Financial Summary Box
-    const financialY = 880;
-    ctx.fillStyle = colors.cardBg;
-    ctx.roundRect?.(40, financialY, canvas.width - 80, 180, 16);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-    ctx.stroke();
-
-    ctx.fillStyle = colors.gold;
-    ctx.font = 'bold 18px Inter, sans-serif';
-    ctx.fillText('FINANCIAL SUMMARY', 70, financialY + 40);
-
-    ctx.fillStyle = colors.muted;
-    ctx.font = '16px Inter, sans-serif';
-    ctx.fillText('Total Charged:', 70, financialY + 78);
-    ctx.fillText('Amount Paid:', 70, financialY + 114);
-    ctx.fillText('Balance Owed:', 70, financialY + 150);
-
-    ctx.textAlign = 'right';
-    ctx.fillStyle = colors.text;
-    ctx.font = 'bold 20px Inter, sans-serif';
-    ctx.fillText(`₵${charged.toFixed(2)}`, canvas.width - 70, financialY + 78);
-
-    ctx.fillStyle = colors.success;
-    ctx.fillText(`₵${paid.toFixed(2)}`, canvas.width - 70, financialY + 114);
-
-    ctx.fillStyle = balance > 0 ? colors.accent : colors.success;
-    ctx.fillText(balance > 0 ? `₵${balance.toFixed(2)}` : 'SETTLED', canvas.width - 70, financialY + 150);
   }
 
   // Footer
